@@ -7,9 +7,8 @@ disableKinds:
   - sitemap
 
 buildFuture: true
-mainContent: cpp
 defaultContentLanguage: pl
-defaultContentLanguageInSubdir: true
+#defaultContentLanguageInSubdir: true
 enableGitInfo: true
 
 languages:
