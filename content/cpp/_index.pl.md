@@ -1,14 +1,12 @@
 ---
-title: "Systemy operacyjne 1"
+title: "Programowanie 2"
 menu: 
   mainmenu:
-    identifier: "sop1"
+    identifier: "cpp"
     weight: 20
 ---
 
-# Systemy operacyjne 1
-
-[Strona przedmiotu Systemy operacyjne 1 w USOSie](https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-IN000-ISP-0236)
+# Programowanie 2 - Obiektowe
 
 ## Obsada
 
@@ -20,8 +18,4 @@ menu:
 
 ### Laboratorium
 
-- Franciszek Jełowicki *koordynator*
-- Tomasz Herman
-- Szymon Zyguła
-- Piotr Krasowski
-- Szymon Tur
+- Szymon Zyguła *koordynator*

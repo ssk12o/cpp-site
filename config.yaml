@@ -7,14 +7,17 @@ disableKinds:
   - sitemap
 
 buildFuture: true
+mainContent: cpp
+defaultContentLanguage: pl
 defaultContentLanguageInSubdir: true
 enableGitInfo: true
 
 languages:
   pl:
     languageName: Polski (Informatyka)
-    title: Programowanie 2 - Obiektowe
+    title: Programowanie 2
     weight: 1
+    homeSection: cpp
 
 params:
   BookTheme: "auto"
