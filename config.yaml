@@ -16,7 +16,6 @@ languages:
     languageName: Polski (Informatyka)
     title: Programowanie 2
     weight: 1
-    homeSection: cpp
 
 params:
   BookTheme: "auto"
