@@ -126,7 +126,11 @@ Przeanalizujmy strukturę programu. Rozpoczynamy od **dyrektywy preprocesora**:
 ```
 
 Kompilator czytając plik źródlowy wykonuje w pierwszej kolejności interpretacji takich dyrektyw.
-`#include` wkleja treść pliku `iostream` w miejscu dyrektywy.
+`#include` wkleja treść pliku `iostream` w miejscu dyrektywy. 
+
+[Nagłówki biblioteki standardowej C++](https://en.cppreference.com/w/cpp/header) nie mają rozszerzeń.
+Dla większości standardowych nagłówków języka C dostępny jest odpowiednik w formacie `<c[nagłówek]`>, np. `<cstring>`
+dostarczający podobne funkcje.
 
 Dalej następuje definicja funkcji `main()`:
 
@@ -137,10 +141,91 @@ int main()
 }
 ```
 
-W ciele funkcji znajduje się instrukcja wypisania - użycie operatora `<<`:
+Podstawowa składnia funkcji, zmiennych, struktur, enumeracji jest podobna do C. Funkcje składają się z typu
+zwracanego, nazwy, listy parametrów i ciała.
+
+W ciele funkcji znajduje się instrukcja wypisania:
 
 ```cpp
 std::cout << "Hello World!";
+```
+
+To konstrukcja analogiczna do `printf("Hello World!")"`z języka C. Zamiast funkcji `printf()` do 
+wypisywania na standardowe wejście używamy operatora `<<` zdefiniowanego w bibliotece standardowej dla klasy obiektu `std::cout`.
+
+### Podstawowe narzędzia
+
+Aby rozpocząć pisanie prostych programów, warto poznać kilka użytecznych narzędzi typowych dla C++.
+
+#### Standardowe strumienie I/O
+
+Nagłówek [\<iostream\>](https://en.cppreference.com/w/cpp/header/iostream) dostarcza globalne zmienne reprezentujące
+strumienie wejścia/wyjścia: `std::cout`, `std::cin`, `std::cerr`, `std::clog`. Biblioteka C zachowywała się podobnie
+dostarczając globalne `stdin`, `stdout` i `stderr`.
+
+Strumienie wyjściowe definiują operatory `<<` [dla różnych typów podstawowych](https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt)
+pozwalające w prosty sposób formatować je na wyjście.
+
+```cpp
+int x = 0;
+float y = 7.5;
+char txt[] = "asdf";
+std::cout << x << ", " << y << ", " << txt << std::endl;
+```
+
+Operatory można łączyć łańcuchowo. `std::endl` kończy linię i dodatkowo wymusza zapis zbuforowanych w strumieniu danych.
+
+Analogicznie `std::cin` pozwala konwertować tekst ze standardowego wejścia na różne typy wbudowane:
+
+```cpp
+int x;
+float y;
+char txt[10];
+std::cin >> x >> y >> txt;
+```
+
+#### Typ std::string
+
+Nagłówek [\<string\>](https://en.cppreference.com/w/cpp/header/string) dostarcza typ `std::string`. To kontener biblioteki standardowej przechowujący ciągłą, dynamiczną tablicę znaków, 
+idealny do przechowywania tekstu. Sam rośnie w miarę dodawania do niego znaków. Integruje się ze standardowymi strumieniami.
+
+```
+std::string empty;
+std::string txt = "Hello, ";
+std::string txt2 = txt + "World!"; // "Hello, World!"
+txt2[5] = '?'; // "Hello? World!"
+txt2 = empty; // ""
+
+std::string option = "first";
+if (txt == "first") {
+   // ...
+} else {
+   // ...
+}
+
+std::cin >> txt;
+```
+
+#### Typ std::vector
+
+Najważniejszy kontener biblioteki standardowej to `vector<T>`, czyli dynamiczna, ciągła tablica obiektów określonego typu.
+Definiuje go nagłówek [\<vector\>](https://en.cppreference.com/w/cpp/header/vector).
+Domyślnie utworzony wektor jest pusty. Można go zainicjalizować daną listą elementów. Można go indeksować jak tablicę.
+
+```cpp
+std::vector<int> vec = {1, 2, 3, 4};
+
+std::cout << vec.size() << '\n'; // 4
+
+vec.push_back(5); // {1, 2, 3, 4, 5}
+vec.resize(3); // {1, 2, 3}
+
+vec[1] = 10; // {1, 10, 3}
+
+std::vector copy = vec; // {1, 10, 3}
+
+std::vector<int> empty; // {}
+vec = empty; // {}
 ```
 
 ### Trajektoria kompilacji
