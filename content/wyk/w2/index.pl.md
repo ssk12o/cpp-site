@@ -289,3 +289,51 @@ Jest częścią kompilatora, którą trzeba jawnie włączyć, typowo przez poda
 `-fsanitize=address` w lini zlecenie. Narzędzie zwiększa użycie pamięci i procesora
 przechowując dodatkowe dane i dodając instrukcje, dlatego zwykle jest używane tylko
 w konfiguracjach deweloperskich.
+
+```shell
+g++ -g -fsanitize=address asan/stack-buffer-overflow.cpp -o prog.exe && ./prog.exe
+```
+
+Przykładowe wyjście z błędem prezentuje miejsce w którym nastąpiło niepoprawne odwołanie do pamięci:
+
+```
+==9118==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7c3308f0902a at pc 0x7c330b6fb303 bp 0x7fffad4a1a20 sp 0x7fffad4a11c8
+WRITE of size 25 at 0x7c3308f0902a thread T0
+    #0 0x7c330b6fb302 in memcpy ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc:115
+    #1 0x5769492672f4 in main asan/stack-buffer-overflow.cpp:6
+    #2 0x7c330ae2a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #3 0x7c330ae2a28a in __libc_start_main_impl ../csu/libc-start.c:360
+    #4 0x576949267164 in _start (/home/saqq/repos/cpp-site/content/wyk/w2/prog.exe+0x1164) (BuildId: 69d828a34f8704fac3eb3dc2ecfaaa8eaf256b24)
+```
+
+#### Jak to działa
+
+ASan przechowuje w dodatkowym segmencie pamięci dodatkowe dane 
+opisujące stan pamięci właściwej - sterty, stosu, itd. To tzw. _shadow memory_. 
+Na każde 8 bajtów przypada jeden _shadow byte_ opisujący stan tych 8'miu bajtów, którego
+wartość mówi czy ten region jest poprawny czy nie:
+* 0 oznacza, że wszystkie 8 bajtów jest poprawne
+* wartość `n` z zakresu `1-7` oznacza że pierwszych `n` bajtów jest poprawnych
+* wartość ujemna oznacza, że cały blok jest niepoprawny (_poisoned_)
+
+Mapowanie adresu na adres bajtu shadow jest prostą operacją:
+```
+ShadowAddress = (RealAddress >> 3) + ShadowOffset
+```
+
+Kompilator z włączonym ASan'em dodaje sprawdzenie wartości bajtu shadow przy każdym odwołaniu 
+do pamięci.
+
+W celu wykrywania przepełnień buforów, nawet przyległych do siebie, ASan dodaje 
+mały niepoprawny region przed i po każdej alokacji na stosie i stercie (tzw. _redzone_).
+Robi to modyfikując instrukcje alokujące ramkę stosu każdej funkcji, oraz podmieniając
+funkcje alokujące `malloc/realloc/free`.
+
+```mermaid
+block-beta
+    r1["Redzone"] int r2["Redzone"] char["char c[10]"] r3["Redzone"] double r4["Redzone"]
+    style r1 fill:#EF5350,stroke-width:0
+    style r2 fill:#EF5350,stroke-width:0
+    style r3 fill:#EF5350,stroke-width:0
+    style r4 fill:#EF5350,stroke-width:0
+```
