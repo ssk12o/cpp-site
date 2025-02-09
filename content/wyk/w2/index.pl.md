@@ -163,3 +163,129 @@ Wartości typu `nullptr_t` są konwertowalne na dowolny inny typ wskaźnikowy.
 
 ### Typy inne
 
+### Typowe błędy
+
+Bezpośredni dostęp do pamięci daje ogromne możliwości, ale i otwiera drogę do licznych, trudnych do wychwycenia okiem błędów:
+* użycie obiektu ze stosu po jego zwolnieniu
+```cpp
+int* foo() {
+     int x = 0;
+     return &x;
+}
+
+int main() {
+    int* ptr = foo();
+    *ptr = 1;
+    return 0;
+}
+```
+Source: [stack-use-after-free.cpp](asan/stack-use-after-free.cpp)
+* użycie obiektu po zwolnieniu za pomocą `delete`
+```cpp
+int main() {
+    int* ptr = new int{3};
+    *ptr = 0;
+    delete ptr;
+    *ptr = 1;
+    return 0;
+}
+```
+Source: [heap-use-after-free.cpp](asan/heap-use-after-free.cpp)
+* podwójne zwolnienie za pomocą `delete`
+```cpp
+void add(int* acc, int* ptr) {
+       *ptr = 0;
+       delete ptr;
+}
+
+int main() {
+    int acc = 0;
+    int* ptr = new int{3};
+    add(&acc, ptr);
+    add(&acc, ptr);
+    return 0;
+}
+```
+Source: [double-free.cpp](asan/double-free.cpp)
+* zwolnienie za pomocą niepoprawnego adresu
+```cpp
+int acc = 0;
+
+void add(int* ptr) {
+       acc += *ptr;
+       delete ptr;
+}
+
+int main() {
+    int a = 0;
+    int* b = new int{3};
+    add(&a);
+    add(b);
+    return 0;
+}
+```
+Source: [invalid-free.cpp](asan/invalid-free.cpp)
+* niezwolnienie pamięci w czasie działania programu
+```cpp
+#include <cstddef>
+
+int main() {
+    const std::size_t size = 128;
+    auto arr = new int*[size];
+    for (int i = 0; i < size; i++) {
+        arr[i] = new int{i};
+    }
+    int sum = 0;
+    for (std::size_t i = 0; i < size; i++) {
+        sum += *arr[i];
+    }
+    delete[] arr;
+    return 0;
+}
+
+```
+Source: [memory-leak.cpp](asan/memory-leak.cpp)
+* przepełnienie bufora na stosie
+```cpp
+#include <cstring>
+
+int main() {
+    char command[10];
+    char output[250];
+    std::strcpy(command, "/usr/bin/verylongcommand");
+    std::strcpy(output, command);
+    return 0;
+}
+```
+Source: [stack-buffer-overflow.cpp](asan/stack-buffer-overflow.cpp)
+* przepełnienie bufora na stercie
+```cpp
+#include <vector>
+
+int main() {
+    std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7};
+    for (int i = 0; i <= vec.size(); i++) {
+        vec[i] = 2 * vec[i];
+    }
+    return 0;
+}
+```
+Source: [heap-buffer-overflow.cpp](asan/heap-buffer-overflow.cpp)
+* przepełnienie statycznego (globalnego) bufora
+
+Wszystkie powyższe programy są niepoprawne, ale najgorsze błędy to takie, które nie
+ujawniają się natychmiastowo. Program (błędny) może tak funkcjonować miesiącami
+w produkcyjnym środowisku.
+
+### Address Sanitizer
+
+Z pomocą przychodzą nowoczesne narzędzia. Postawowym, bez którego ciężko obecnie
+wyobrazić sobie pracę nad większym projektem w C++ jest Address Sanitizer (ASan)
+wprowadzony przez [Google](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/37752.pdf).
+
+ASan instrumentuje produkowany kod maszynowy, dodając do niego instrukcje sprawdzające
+poprawność odwołań do pamięci i przerywając działanie programu natychmiast po wykryciu błędu.
+Jest częścią kompilatora, którą trzeba jawnie włączyć, typowo przez podanie flagi takiej jak
+`-fsanitize=address` w lini zlecenie. Narzędzie zwiększa użycie pamięci i procesora
+przechowując dodatkowe dane i dodając instrukcje, dlatego zwykle jest używane tylko
+w konfiguracjach deweloperskich.
