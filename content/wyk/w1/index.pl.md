@@ -1050,13 +1050,13 @@ my.exe: main.o helper.o libexternal_library.so
 ```
 
 Source:
-[Makefile](libraries/shared/Makefile)
-[external.hpp](libraries/shared/external.hpp)
-[file1.cpp](libraries/shared/file1.cpp)
-[file2.cpp](libraries/shared/file2.cpp)
-[helper.cpp](libraries/shared/helper.cpp)
-[helper.hpp](libraries/shared/helper.hpp)
-[main.cpp](libraries/shared/main.cpp)
+[Makefile](libraries/so/Makefile)
+[external.hpp](libraries/so/external.hpp)
+[file1.cpp](libraries/so/file1.cpp)
+[file2.cpp](libraries/so/file2.cpp)
+[helper.cpp](libraries/so/helper.cpp)
+[helper.hpp](libraries/so/helper.hpp)
+[main.cpp](libraries/so/main.cpp)
 
 Tu natomiast program wyjściowy nie zawiera kodu z biblioteki. Do uruchomienia
 niezbędna jest sama biblioteka:
