@@ -9,6 +9,7 @@ weight: 20
 Zakres:
 
 * obiekty
+* rozmiar i wyrównanie
 * system typów
   * typy podstawowe
   * tablice
@@ -16,12 +17,11 @@ Zakres:
   * referencje
   * wskaźniki
   * struktury, klasy i unie
-* rozmiar i wyrównanie
-* własności const/volatile
+* własności `const` i `volatile`
 * trwałość obiektów
 * czas życia obiektów
-* operatory new/delete
-* address sanitizer (ASAN)
+* operatory `new`/`new[]`/`delete`/`delete[]`
+* address sanitizer (ASan)
 
 ### Obiekty
 
@@ -71,7 +71,6 @@ Każdy obiekt ma **adres** pozyskiwany operatorem `&`.
 Przez adres obiektu należy rozumieć adres pierwszego zajmowanego bajtu.
 
 ![memory.svg](memory.svg)
-
 
 ```cpp
 struct Point
@@ -136,11 +135,15 @@ if (flag) {
 
 #### Typy całkowitoliczbowe
 
-
+TODO
 
 #### Typy znakowe
 
+TODO
+
 #### Typy zmiennoprzecinkowe
+
+TODO
 
 #### std::nullptr_t
 
@@ -159,9 +162,116 @@ func(NULL); // ambiguous
 
 Wartości typu `nullptr_t` są konwertowalne na dowolny inny typ wskaźnikowy.
 
-#### 
+#### Wskaźniki
 
-### Typy inne
+Wskaźniki przechowują adresy obiektów, pośrednio wskazują na inny obiekt.
+Typ wskaźnika zawsze mówi o typie obiektu wskazywanego.
+
+```cpp
+Point p = {1, 3};
+Point* pp = &p;
+*p = {2, 4};
+p->x = 0;
+
+```
+
+Zmienna wskaźnikowa też jest obiektem - można więc na nią wskazywać.
+
+```cpp
+Point** ppp = &pp;
+```
+
+Wartość wskaźnika nie musi być poprawna. Obiekt wskazywany może już nie żyć, albo jeszcze nie żyć, albo adres może 
+nie być adresem żadnego obiektu. Dereferencja takiego niepoprawnego wskazania to błąd.
+
+```cpp
+Point* pp = nullptr;
+{
+    Point p {1, 2};
+    pp = &p;
+}
+pp->x = 0; // !
+```
+
+### Referencje
+
+Referencje to również pośrednie odwołania do obiektów. 
+W przeciwieństwie do wskaźników muszą być zainicjalizowane w momencie tworzenia. Nie istnieje _null-referencja_.
+
+```cpp
+Point p = {1, 2};
+Point& pref = p;
+pref.x = 0;
+```
+
+Referencje **nie są** obiektami, nie mają rozmiaru, nie mają adresu, nie muszą (ale mogą) być przechowywane w pamięci.
+Nie da się więc pozyskać referencji do referencji. Inicjalizacja referencji inną referencją tworzy nową referencję 
+na pierwotny obiekt.
+
+```cpp
+Point p = {1, 2};
+Point& pref = p;
+Point& pref2 = pref;
+```
+
+Referencje tak samo jak wskaźniki mogą być niepoprawne jeżeli obiekt uległ już zniszczeniu:
+
+```cpp
+std::vector<int> v = {1, 2, 3};
+int& i0 = v[0];
+int& i1 = v[1];
+int& i3 = v[2];
+v.clear();
+i0 = 10; // !
+```
+
+Powszechne jest przekazywanie parametrów wejściowo/wyjściowych do funkcji przez referencję.
+
+```cpp
+void fill(vector<int>& v) {
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+}
+
+int main() {
+    vector<int> v;
+    fill(v);
+    return 0;
+}
+```
+
+### Tablice
+
+TODO
+
+`std::array<>`
+
+### Enumeracje
+
+TODO
+
+`enum class`
+
+### Struktury i klasy
+
+### Własności const i volatile
+
+TODO
+
+# Trwałość obiektów
+
+heap/stack
+
+TODO
+
+# Czas życia obiektów
+
+TODO
+
+# Dynamiczna alokacja pamięci
+
+Operatory `new`/`new[]`/`delete`/`delete[]`
 
 ### Typowe błędy
 

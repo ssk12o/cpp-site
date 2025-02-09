@@ -6,4 +6,17 @@ weight: 30
 
 # Wykład 3 - Klasy
 
-klasy, konstruktory, destruktory, RAII, konstruktory kopiujące, przenoszące, operatory przypisania, przeniesienia, dziedziczenie, polimorfizm, SOLID
+Zakres:
+* cechy programowania obiektowego
+* klasy
+* konstruktory i destruktory
+* RAII
+* konstruktory kopiujące i operatory przypisania
+* konstruktory przenoszące i operatory przeniesienia
+* reguła 3-ch, reguła 5-ciu
+* widoczność
+* przeciążanie operatorów
+* konwersje
+* literały zdefiniowane przez użytkownika
+* składowe statyczne
+
