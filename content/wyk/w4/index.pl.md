@@ -6,6 +6,17 @@ weight: 40
 
 # Wykład 4 - Narzędzia
 
-sanitizers, valgrind, gdb, protectors
-make, cmake, ninja, conan, vcpkg, 
-profiling, coredumps
+* Debugging:
+  * gdb
+  * coredumps
+  * sanitizers
+  * protectors
+  * valgrind
+  * profiling
+* Budowanie:
+  * build types
+  * cmake
+  * ninja
+* Zarządzanie zależnościami:
+  * conan
+  * vcpkg 

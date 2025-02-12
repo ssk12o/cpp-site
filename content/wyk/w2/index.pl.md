@@ -11,12 +11,12 @@ Zakres:
 * obiekty
 * rozmiar i wyrównanie
 * system typów
-  * typy podstawowe
-  * tablice
-  * enumeracje
-  * referencje
-  * wskaźniki
-  * struktury, klasy i unie
+    * typy podstawowe
+    * tablice
+    * enumeracje
+    * referencje
+    * wskaźniki
+    * struktury, klasy i unie
 * własności `const` i `volatile`
 * trwałość obiektów
 * czas życia obiektów
@@ -27,6 +27,7 @@ Zakres:
 
 Programy w C++ manipulują [obiektami](https://en.cppreference.com/w/cpp/language/object).
 Cechy obiektów:
+
 * rozmiar (`sizeof()`)
 * wyrównanie (`alignof()`)
 * trwałość pamięci (automatyczna, statyczna, dynamiczna, thread-local)
@@ -40,6 +41,7 @@ Cechy obiektów:
 Zadeklarowane obiekty (i referencje) nazywamy **zmiennymi**.
 
 Przykłady obiektów:
+
 ```cpp
 long global;
  
@@ -59,7 +61,7 @@ Obiekty żyją **w pamięci** programu. Pamięć składa się z bajtów, posiada
 
 Każdy obiekt ma **rozmiar** pozyskiwany operatorem `sizeof()`. To liczba zajmowanych przez obiekt bajtów.
 Obiekty (z pewnymi wyjątkami) muszą zajmować przynajmniej 1 bajt, tak by miały unikalne adresy.
-Ciąg bajtów w pamięci, które zajmuje obiekt, rozmiaru `sizeof(val)`, jest nazywany **reprezentacją obiektu**.  
+Ciąg bajtów w pamięci, które zajmuje obiekt, rozmiaru `sizeof(val)`, jest nazywany **reprezentacją obiektu**.
 
 Typ obiektu narzuca minimalne wymagania na **wyrównanie** pozyskiwane operatorem `alignof()`.
 To liczba, zawsze potęga dwójki, przez którą adres musi być podzielny, lub inaczej,
@@ -98,9 +100,11 @@ int main()
     return 0;
 }
 ```
+
 Source: [addresses.cpp](addresses.cpp)
 
 Obiekty mogą zawierać **podobiekty**, np.:
+
 * podobiektami struktur są pola struktury
 * podobiektami tablic są ich elementy
 
@@ -115,7 +119,7 @@ C++ zawiera szereg wbudowanych [typów podstawowych](https://en.cppreference.com
 
 #### void
 
-Typ pusty. Nie ma obiektów typu `void`. Używany jako typ zwracany w procedurach i 
+Typ pusty. Nie ma obiektów typu `void`. Używany jako typ zwracany w procedurach i
 do konstrukcji wskaźników `void*`.
 
 #### bool
@@ -135,7 +139,29 @@ if (flag) {
 
 #### Typy całkowitoliczbowe
 
-TODO
+| **Type**             | **C++ Standard** | **LP32** | **ILP32** | **LLP64** | **LP64** |
+|----------------------|------------------|----------|-----------|-----------|----------|
+| `char`               | >= 8             | 8        | 8         | 8         | 8        |
+| `signed char`        | >= 8             | 8        | 8         | 8         | 8        |
+| `unsigned char`      | >= 8             | 8        | 8         | 8         | 8        |
+| `short`              | >= 16            | 16       | 16        | 16        | 16       |
+| `unsigned short`     | >= 16            | 16       | 16        | 16        | 16       |
+| `int`                | >= 16            | 16       | 32        | 32        | 32       |
+| `unsigned int`       | >= 16            | 16       | 32        | 32        | 32       |
+| `long`               | >= 32            | 32       | 32        | 32        | 64       |
+| `unsigned long`      | >= 32            | 32       | 32        | 32        | 64       |
+| `long long`          | >= 64            | 64       | 64        | 64        | 64       |
+| `unsigned long long` | >= 64            | 64       | 64        | 64        | 64       |
+
+Unsigned integer arithmetic is always performed modulo 2n
+where n is the number of bits in that particular integer. E.g. for unsigned int, adding one to UINT_MAX gives ​0​, and subtracting one from ​0​ gives UINT_MAX.
+
+When signed integer arithmetic operation overflows (the result does not fit in the result type), the behavior is undefined, — the possible manifestations of such an operation include:
+
+it wraps around according to the rules of the representation (typically two's complement),
+it traps — on some platforms or due to compiler options (e.g. -ftrapv in GCC and Clang),
+it saturates to minimal or maximal value (on many DSPs),
+it is completely optimized out by the compiler.
 
 #### Typy znakowe
 
@@ -148,10 +174,12 @@ TODO
 #### std::nullptr_t
 
 Typ pustego wskaźnika `nullptr`. Wprowadzony dla lepszej kontroli typów.
+
 ```cpp
 void* p = nullptr;
 char* cp = nullptr;
 ```
+
 Znane z C macro `NULL` było równe `0`, czyli było liczbą. Prowadzi to do niejednoznaczności, np.
 
 ```cpp
@@ -161,6 +189,8 @@ func(NULL); // ambiguous
 ```
 
 Wartości typu `nullptr_t` są konwertowalne na dowolny inny typ wskaźnikowy.
+
+#### Konwersje
 
 #### Wskaźniki
 
@@ -181,7 +211,7 @@ Zmienna wskaźnikowa też jest obiektem - można więc na nią wskazywać.
 Point** ppp = &pp;
 ```
 
-Wartość wskaźnika nie musi być poprawna. Obiekt wskazywany może już nie żyć, albo jeszcze nie żyć, albo adres może 
+Wartość wskaźnika nie musi być poprawna. Obiekt wskazywany może już nie żyć, albo jeszcze nie żyć, albo adres może
 nie być adresem żadnego obiektu. Dereferencja takiego niepoprawnego wskazania to błąd.
 
 ```cpp
@@ -195,7 +225,7 @@ pp->x = 0; // !
 
 ### Referencje
 
-Referencje to również pośrednie odwołania do obiektów. 
+Referencje to również pośrednie odwołania do obiektów.
 W przeciwieństwie do wskaźników muszą być zainicjalizowane w momencie tworzenia. Nie istnieje _null-referencja_.
 
 ```cpp
@@ -205,7 +235,7 @@ pref.x = 0;
 ```
 
 Referencje **nie są** obiektami, nie mają rozmiaru, nie mają adresu, nie muszą (ale mogą) być przechowywane w pamięci.
-Nie da się więc pozyskać referencji do referencji. Inicjalizacja referencji inną referencją tworzy nową referencję 
+Nie da się więc pozyskać referencji do referencji. Inicjalizacja referencji inną referencją tworzy nową referencję
 na pierwotny obiekt.
 
 ```cpp
@@ -275,8 +305,11 @@ Operatory `new`/`new[]`/`delete`/`delete[]`
 
 ### Typowe błędy
 
-Bezpośredni dostęp do pamięci daje ogromne możliwości, ale i otwiera drogę do licznych, trudnych do wychwycenia okiem błędów:
+Bezpośredni dostęp do pamięci daje ogromne możliwości, ale i otwiera drogę do licznych, trudnych do wychwycenia okiem
+błędów:
+
 * użycie obiektu ze stosu po jego zwolnieniu
+
 ```cpp
 int* foo() {
      int x = 0;
@@ -289,8 +322,11 @@ int main() {
     return 0;
 }
 ```
+
 Source: [stack-use-after-free.cpp](asan/stack-use-after-free.cpp)
+
 * użycie obiektu po zwolnieniu za pomocą `delete`
+
 ```cpp
 int main() {
     int* ptr = new int{3};
@@ -300,8 +336,11 @@ int main() {
     return 0;
 }
 ```
+
 Source: [heap-use-after-free.cpp](asan/heap-use-after-free.cpp)
+
 * podwójne zwolnienie za pomocą `delete`
+
 ```cpp
 void add(int* acc, int* ptr) {
        *ptr = 0;
@@ -316,8 +355,11 @@ int main() {
     return 0;
 }
 ```
+
 Source: [double-free.cpp](asan/double-free.cpp)
+
 * zwolnienie za pomocą niepoprawnego adresu
+
 ```cpp
 int acc = 0;
 
@@ -334,8 +376,11 @@ int main() {
     return 0;
 }
 ```
+
 Source: [invalid-free.cpp](asan/invalid-free.cpp)
+
 * niezwolnienie pamięci w czasie działania programu
+
 ```cpp
 #include <cstddef>
 
@@ -354,8 +399,11 @@ int main() {
 }
 
 ```
+
 Source: [memory-leak.cpp](asan/memory-leak.cpp)
+
 * przepełnienie bufora na stosie
+
 ```cpp
 #include <cstring>
 
@@ -367,8 +415,11 @@ int main() {
     return 0;
 }
 ```
+
 Source: [stack-buffer-overflow.cpp](asan/stack-buffer-overflow.cpp)
+
 * przepełnienie bufora na stercie
+
 ```cpp
 #include <vector>
 
@@ -380,7 +431,9 @@ int main() {
     return 0;
 }
 ```
+
 Source: [heap-buffer-overflow.cpp](asan/heap-buffer-overflow.cpp)
+
 * przepełnienie statycznego (globalnego) bufora
 
 Wszystkie powyższe programy są niepoprawne, ale najgorsze błędy to takie, które nie
@@ -418,23 +471,25 @@ WRITE of size 25 at 0x7c3308f0902a thread T0
 
 #### Jak to działa
 
-ASan przechowuje w dodatkowym segmencie pamięci dodatkowe dane 
-opisujące stan pamięci właściwej - sterty, stosu, itd. To tzw. _shadow memory_. 
+ASan przechowuje w dodatkowym segmencie pamięci dodatkowe dane
+opisujące stan pamięci właściwej - sterty, stosu, itd. To tzw. _shadow memory_.
 Na każde 8 bajtów przypada jeden _shadow byte_ opisujący stan tych 8'miu bajtów, którego
 wartość mówi czy ten region jest poprawny czy nie:
+
 * 0 oznacza, że wszystkie 8 bajtów jest poprawne
 * wartość `n` z zakresu `1-7` oznacza że pierwszych `n` bajtów jest poprawnych
 * wartość ujemna oznacza, że cały blok jest niepoprawny (_poisoned_)
 
 Mapowanie adresu na adres bajtu shadow jest prostą operacją:
+
 ```
 ShadowAddress = (RealAddress >> 3) + ShadowOffset
 ```
 
-Kompilator z włączonym ASan'em dodaje sprawdzenie wartości bajtu shadow przy każdym odwołaniu 
+Kompilator z włączonym ASan'em dodaje sprawdzenie wartości bajtu shadow przy każdym odwołaniu
 do pamięci.
 
-W celu wykrywania przepełnień buforów, nawet przyległych do siebie, ASan dodaje 
+W celu wykrywania przepełnień buforów, nawet przyległych do siebie, ASan dodaje
 mały niepoprawny region przed i po każdej alokacji na stosie i stercie (tzw. _redzone_).
 Robi to modyfikując instrukcje alokujące ramkę stosu każdej funkcji, oraz podmieniając
 funkcje alokujące `malloc/realloc/free`.
@@ -442,8 +497,8 @@ funkcje alokujące `malloc/realloc/free`.
 ```mermaid
 block-beta
     r1["Redzone"] int r2["Redzone"] char["char c[10]"] r3["Redzone"] double r4["Redzone"]
-    style r1 fill:#EF5350,stroke-width:0
-    style r2 fill:#EF5350,stroke-width:0
-    style r3 fill:#EF5350,stroke-width:0
-    style r4 fill:#EF5350,stroke-width:0
+    style r1 fill: #EF5350, stroke-width: 0
+    style r2 fill: #EF5350, stroke-width: 0
+    style r3 fill: #EF5350, stroke-width: 0
+    style r4 fill: #EF5350, stroke-width: 0
 ```
