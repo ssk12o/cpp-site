@@ -91,6 +91,8 @@ clang++ -o hello.clang hello.cpp
 cl /Fehello.exe hello.cpp
 ```
 
+> Znany z pierwszego semestru Visual Studio, pod spodem używa kompilatora `cl`.
+
 Do zbudowania potrzebny jest **kompilator** - program który tłumaczy kod z plików tekstowych na kod maszynowy.
 Takich kompilatorów jest bardzo dużo, wszystkie się różnią, mają wiele wersji, wspierają rozwijający się
 język [w różnym stopniu](https://en.cppreference.com/w/cpp/compiler_support).
@@ -118,6 +120,10 @@ Po wygenerowaniu pliku wyjściowego możemy go uruchomić:
 ```shell
 ./hello.gcc
 ```
+
+> W praktyce do programowania w C++, tak jak w przypadku innych języków,
+używamy zintegrowanego środowiska programistycznego (IDE). Wykład celowo demonstruje
+narzędzia od podstaw, mając na celu przybliżenie całego ekosystemu, a nie tylko języka samego w sobie.
 
 Przeanalizujmy strukturę programu. Rozpoczynamy od **dyrektywy preprocesora**:
 
@@ -437,7 +443,7 @@ make
 
 Program w C++ składa się z różnych [elementów](https://en.cppreference.com/w/cpp/language/basic_concepts) (_ang. entities_):
 * wartości
-* **obiekty**
+* obiekty
 * referencje
 * funkcje
 * enumeratory
@@ -465,9 +471,7 @@ Deklaracje:
 * **mogą** nadać im nazwę,
 * **mogą** definiować ich właściwości;
 
-Deklaracje, które w pełni opisują element,
-pozwalając na jego użycie,
-to również **definicje**.
+Deklaracje, które w pełni opisują element, pozwalając na jego użycie, to również **definicje**.
 
 ```cpp
 /* przykłady deklaracji */
@@ -716,7 +720,7 @@ void foo(); // czy to ten sa sama funkcja?
 Odpowiedź brzmi tak, jeżeli deklaracje/definicje są w tej samej jednostce translacji lub mają zewnętrzny [**tryb linkowania**:](https://en.cppreference.com/w/cpp/language/storage_duration#Linkage).
 Tryb linkowania może być zewnętrzny lub wewnętrzny (lub brak).
 
-Reguły, kiedy jaki tryb są zawiłe, zależą od tego:
+Reguły stosowane do określenia, jaki tryb linkowania ma nazwa, są zawiłe. Zależą od tego:
 * w jakim zakresie występuje nazwa (namespace, ciało funkcji, klasa, itp.)
 * jakie kwalifikatory ma deklaracja `const`, `extern`, `static`, `inline`.
 
