@@ -126,7 +126,6 @@ do konstrukcji wskaźników `void*`.
 
 Typ mogący przechowywać jedną z dwóch wartości `true` lub `false`.
 Wyrażenia logiczne są typu `bool`.
-C++ **nie specyfikuje** jak wygląda reprezentacja tego typu w pamięci.
 
 ```cpp
 int x = 0;
@@ -137,39 +136,120 @@ if (flag) {
 }
 ```
 
+C++ **nie specyfikuje**, jak wygląda reprezentacja tego typu w pamięci.
+Daje natomiast gwarancje w zakresie konwersji.
+Rzutowanie liczby całkowitej `0` na typ `bool` daje `false`, a każdej innej - `true`.
+
+```cpp
+int a = 0;
+bool b = static_cast<bool>(a); //false
+
+int c = 42;
+bool d = static_cast<bool>(c); // true
+```
+
+Rzutowanie `true` na liczbę całkowitą daje `1` a `false` - `0`.
+
+```cpp
+bool a = false;
+int b = static_cast<int>(a); // 0
+
+bool c = true;
+int d = static_cast<int>(c); // 1
+```
+
 #### Typy całkowitoliczbowe
+
+C++, tak jak C, dostarcza szereg typów całkowitoliczbowych, nie specyfikując dokładnie,
+jakiej mają być szerokości bitowej. Narzuca jedynie minima.
+Szerokości w typowych implementacjach przedstawiono w kolumnach tabeli:
 
 | **Type**             | **C++ Standard** | **LP32** | **ILP32** | **LLP64** | **LP64** |
 |----------------------|------------------|----------|-----------|-----------|----------|
-| `char`               | >= 8             | 8        | 8         | 8         | 8        |
-| `signed char`        | >= 8             | 8        | 8         | 8         | 8        |
-| `unsigned char`      | >= 8             | 8        | 8         | 8         | 8        |
-| `short`              | >= 16            | 16       | 16        | 16        | 16       |
-| `unsigned short`     | >= 16            | 16       | 16        | 16        | 16       |
-| `int`                | >= 16            | 16       | 32        | 32        | 32       |
-| `unsigned int`       | >= 16            | 16       | 32        | 32        | 32       |
-| `long`               | >= 32            | 32       | 32        | 32        | 64       |
-| `unsigned long`      | >= 32            | 32       | 32        | 32        | 64       |
-| `long long`          | >= 64            | 64       | 64        | 64        | 64       |
-| `unsigned long long` | >= 64            | 64       | 64        | 64        | 64       |
+| `char`               | \>= 8            | 8        | 8         | 8         | 8        |
+| `signed char`        | \>= 8            | 8        | 8         | 8         | 8        |
+| `unsigned char`      | \>= 8            | 8        | 8         | 8         | 8        |
+| `short`              | \>= 16           | 16       | 16        | 16        | 16       |
+| `unsigned short`     | \>= 16           | 16       | 16        | 16        | 16       |
+| `int`                | \>= 16           | 16       | 32        | 32        | 32       |
+| `unsigned int`       | \>= 16           | 16       | 32        | 32        | 32       |
+| `long`               | \>= 32           | 32       | 32        | 32        | 64       |
+| `unsigned long`      | \>= 32           | 32       | 32        | 32        | 64       |
+| `long long`          | \>= 64           | 64       | 64        | 64        | 64       |
+| `unsigned long long` | \>= 64           | 64       | 64        | 64        | 64       |
 
-Unsigned integer arithmetic is always performed modulo 2n
-where n is the number of bits in that particular integer. E.g. for unsigned int, adding one to UINT_MAX gives ​0​, and subtracting one from ​0​ gives UINT_MAX.
+Rozmiar w bajtach jest jeszcze słabiej wyspecyfikowany. Jedyne co standard gwarantuje to:
 
-When signed integer arithmetic operation overflows (the result does not fit in the result type), the behavior is undefined, — the possible manifestations of such an operation include:
+```
+1 == sizeof(char) ≤ sizeof(short) ≤ sizeof(int) ≤ sizeof(long) ≤ sizeof(long long)
+```
 
-it wraps around according to the rules of the representation (typically two's complement),
-it traps — on some platforms or due to compiler options (e.g. -ftrapv in GCC and Clang),
-it saturates to minimal or maximal value (on many DSPs),
-it is completely optimized out by the compiler.
+Co pozwala na teoretyczną implementację z 64-bitowymi bajtami i wszystkimi powyższymi rozmiarami
+równymi 1. To ciekawa zaszłość historyczna: istniały maszyny z bajtami rozmiarów od 1 do 42 bitów.
+Programy nie powinny zakładać żadnych rozmiarów, tylko korzystać z operatora `sizeof()` do ich pozyskania.
+
+Co często zaskakuje, dopiero od C++20, typy ze znakiem (signed) muszą być reprezentowane standardowym kodem uzupełnień do dwóch.
+
+Arytmetyka liczb **bez znaku** jest dobrze określona, przepełnienia zawsze skutkują _zawijaniem_ modulo
+`2^n`.
+
+```cpp
+unsigned short a = std::numeric_limits<unsigned short>::max();
+unsigned short b = 1;
+
+unsigned short c = a + b; // overflow
+std::cout << "a + b = " << c << std::endl; // 0
+
+a = 0;
+
+unsigned short c = a - b; // underflow
+std::cout << "a - b = " << c << std::endl; // 65535
+```
+
+Analogiczna operacja na typach **ze znakiem** ma **niezdefiniowane zachowanie** i zawsze jest błędem!
+Poprawny program nie dopuszcza do przepełnień!
+
+```cpp
+int a = std::numeric_limits<int>::max();
+int b = 1;
+
+int c = a + b; // error!
+std::cout << "a + b = " << c << std::endl; // ???
+```
 
 #### Typy znakowe
 
-TODO
+Obecnie C++ dostarcza następujące typy całkowitoliczbowe
+przeznaczone do przechowywania znaków:
+
+* `char` - nie wiadomo czy jest ze signed, czy unsigned, ale to najlepszy typ do przechowywania znaków
+* `signed char` - jednobajtowa liczba ze znakiem
+* `unsigned char` - jednobajtowa liczba bez znaku, typ używany do wglądu w bajtową reprezentację obiektów
+* `wchar_t` - szerokie znaki, zależy od platformy, w praktyce 32-bit na Linux, 16-bit na Windows 
+* `char8_t` - znaki w kodowaniu UTF-8
+* `char16_t` - znaki w kodowaniu UTF-16
+* `char32_t` - znaki w kodowaniu UTF-32
+
+Typ `unsigned char` ma bardzo ważne zastosowanie: można z jego pomocą 
+analizować reprezentację wszystkich obiektów w pamięci:
+
+```cpp
+int x = 12345; // Jakiś obiekt
+unsigned char* bytes = reinterpret_cast<unsigned char*>(&x);
+for (std::size_t i = 0; i < sizeof(x); ++i) {
+    std::cout << "Byte " << i << ": "
+              << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(bytePtr[i]) << "\n";
+}
+```
+Source: [objrep.cpp](objrep.cpp)
+
+> Typ `unsigned char` jest jedynym typem, który na to pozwala. Dobieranie się do pamięci
+obiektów za pomocą wskazań na inne typy jest niepoprawne!
 
 #### Typy zmiennoprzecinkowe
 
-TODO
+Standard dostarcza 3 typy: `float`, `double`, `long double`, różniące się precyzją.
+Typowo reprezentowane zgodnie ze standardem IEEE-754 słowami długości 32-bit, 64-bit, 80-bit.
 
 #### std::nullptr_t
 
@@ -191,6 +271,8 @@ func(NULL); // ambiguous
 Wartości typu `nullptr_t` są konwertowalne na dowolny inny typ wskaźnikowy.
 
 #### Konwersje
+
+TODO
 
 #### Wskaźniki
 
@@ -271,23 +353,140 @@ int main() {
 }
 ```
 
-### Tablice
-
-TODO
-
-`std::array<>`
-
 ### Enumeracje
 
-TODO
+C++ wspiera enumeracje, podobnie do C:
+
+```cpp
+enum Color { red, green, blue };
+Color r = red;
+ 
+switch(r)
+{
+    case red  : std::cout << "red\n";   break;
+    case green: std::cout << "green\n"; break;
+    case blue : std::cout << "blue\n";  break;
+}
+```
 
 `enum class`
 
+TODO
+
 ### Struktury i klasy
+
+Struktury i klasy to typy, których obiekty zawierają serię podobiektów, różnych typów.
+
+```cpp
+struct S {
+  int x;
+  char txt[3];
+};
+
+class C {
+  std::vector<S> v;
+  std::string name;
+};
+```
+
+Jedyną różnicą między słowami kluczowymi `struct` i `class` jest domyślna _widoczność_ ich składowych: publiczna
+w przypadku struktur, prywatna w przypadku klas. O widoczności będziemy mówić na następnym wykładzie dotyczącym
+programowania obiektowego.
+
+Rozmiar struktur podobnie jak rozmiar tablic wynosi co najmniej tyle ile zsumowany rozmiar składowych.
+
+```cpp
+S s = {'a', 3};
+static_assert(sizeof(S) == 8, "surprise!");
+```
+Source: [structures.cpp](structures.cpp)
+
+Struktury i klasy można przypisywać. Domyślnie takie przypisanie, przypisuje pole po polu.
+
+```cpp
+S s = {'a', 3};
+S copy = s;
+```
+
+### Tablice
+
+Tablice to obiekty typu `T[n]` składające się z `n` następujących po sobie
+podobiektów typu `T`. Mają stały rozmiar `n` wynikający z ich typu, niezmienny 
+od początku do końca życia tablicy.
+
+```cpp
+int tab[3] = {1, 2, 3};
+char txt[] = "txt"; // dedukcja typu tablicy `char[4]`
+std::string poem[3] = { "ala", "ma", "kota" };
+```
+
+Tablic nie da się przypisywać. Trzeba przenosić element po elemencie.
+
+```cpp
+int a[3] = {1, 2, 3}, b[3] = {4, 5, 6};
+a = b; // !
+```
+
+Ale struktury, zawierające tablice już można:
+
+```cpp
+struct S { int c[3]; };
+S s1 = {1, 2, 3}, s2 = {3, 4, 5};
+```
+
+Rozmiar tablicy zwykle wynosi `n * sizeof(T)`, ale nie zawsze:
+
+```cpp
+alignas(4) struct My1BStruct
+{
+    char c;       
+};
+My1BStruct stab[3];
+static_assert(sizeof(stab) == 12, "surprise!");
+```
+
+Tablice są niejawnie rzutowalne na wskaźnik na ich pierwszy element typu `T*`:
+
+```cpp
+void f(int* p) {
+    std::cout << *p << '\n';
+}
+
+int a[3] = {1, 2, 3};
+int* p = a;
+
+f(a); // ok
+f(p);
+```
+
+Nie podając rozmiaru uzyskujemy niekompletny typ `T[]`. Można deklarować zmienne takiego typu, 
+tak samo, jak wskaźniki do zadeklarowanych tylko struktur:
+
+```cpp
+extern int gtab[]; // deklaracja
+
+int main() {
+  f(gtab);
+}
+
+int gtab[] = {1, 2, 3}; // definicja
+```
+
+Te własności, pochodzące jeszcze z C są nieintuicyjne, zwłaszcza w przypadku wielowymiarowych tablic.
+C++11 dostarczył typ `std::array<T, N>`, który jest 
+strukturą opakowującą tablicę. Da się ją kopiować,
+budować do niej wskaźniki, referencje, tak jak zwykle:
+
+```cpp
+std::array<int, 3> ax = {1, 2, 3};
+std::array<int, 3> ay;
+ay = ax;
+```
 
 ### Własności const i volatile
 
-TODO
+Każdy typ może być dodakowo kwalifikowany słowami kluczowymi `const` i/lub `volatile`.
+`const` czyni obiekty tego typu niemodyfikowalnymi. `volatile` 
 
 # Trwałość obiektów
 
