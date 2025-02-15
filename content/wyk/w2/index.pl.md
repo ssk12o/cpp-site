@@ -19,6 +19,7 @@ Zakres:
     * struktury, klasy i unie
 * własności `const` i `volatile`
 * rzutowania
+* strict aliasing rule
 * trwałość obiektów
 * czas życia obiektów
 * operatory `new`/`new[]`/`delete`/`delete[]`
@@ -51,7 +52,7 @@ int x = 3;
 vector<int> v;
 int* ptr = &x;
 
-int* ptr = new int(3);
+int* ptr = new int(3); // 2 obiekty - wskaźnik i obiekt wskazywany
 // ...
 delete ptr;
 ```
@@ -248,25 +249,6 @@ const char32_t cstr[] = U"🌍🚀🧑";
 std::u32string str = U"🌍🚀🧑";
 ```
 Source: [chars.cpp](chars.cpp)
-
-##### Reprezentacja obiektów
-
-Typ `unsigned char` ma bardzo ważne zastosowanie: można z jego pomocą
-analizować reprezentację wszystkich obiektów w pamięci:
-
-```cpp
-int x = 12345; // Jakiś obiekt
-unsigned char* bytes = reinterpret_cast<unsigned char*>(&x);
-for (std::size_t i = 0; i < sizeof(x); ++i) {
-    std::cout << "Byte " << i << ": "
-              << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(bytePtr[i]) << "\n";
-}
-```
-
-Source: [objrep.cpp](objrep.cpp)
-
-> Typ `unsigned char` jest jedynym typem, który na to pozwala. Dobieranie się do pamięci
-> obiektów za pomocą wskazań na inne typy jest niepoprawne!
 
 ##### Surowe literały znakowe
 
@@ -607,7 +589,7 @@ std::size_t s = str.size(); // ok! .size() nie modyfikuje
 // str.append(" world"); //! modyfikacja obiektu const
 ```
 
-#### Rzutowania
+### Rzutowania
 
 C++ ma 4 operatory rzutowania: `static_cast`, `const_cast`, `reinterpret_cast`, `dynamic_cast`
 
@@ -655,6 +637,82 @@ float f = 1.0f;
 int* i = reinterpret_cast<int*>(&f);
 *i = 3; //! błąd - tam nie ma int'a
 ```
+
+### Reprezentacja obiektów
+
+Obiekty są reprezentowane w pamięci jako ciąg bajtów. Typ `unsigned char` ma bardzo ważne zastosowanie:
+można z jego pomocą analizować reprezentację wszystkich obiektów w pamięci:
+
+```cpp
+int x = 12345; // Jakiś obiekt
+unsigned char* bytes = reinterpret_cast<unsigned char*>(&x);
+for (std::size_t i = 0; i < sizeof(x); ++i) {
+    std::cout << "Byte " << i << ": "
+              << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(bytePtr[i]) << "\n";
+}
+```
+
+Source: [objrep.cpp](objrep.cpp)
+
+> Typy `char`, `unsigned char` i `std::byte` są jedynymi, które na to pozwalają.
+> Dobieranie się obiektów za pomocą wyrażeń innych typów jest niepoprawne!
+
+Dostęp do obiektu typu `T` jest możliwy tylko za pomocą wyrażeń typu:
+* `T`
+* `const/volatile T`
+* `signed/unsigned T`
+* `const/volatile signed/unsigned T`
+* klas zawierających pola typu `T`
+* klas bazowych `T`
+* `char`, `unsigned char` i `std::byte`
+
+To reguła znana jako _strict aliasing rule_.
+
+> Dostęp do obiektu za pomocą wyrażeń innych typów ma niezdefiniowane zachowanie!
+
+Przykładowo mając funkcję przyjmującą 2 wskazania:
+
+```cpp
+int foo(float *f, int *i) { 
+    *i = 1;               
+    *f = 0.f;            
+   
+   return *i;
+}
+```
+
+Kompilator ma prawo założyć, że parametry nie będą wskazywać 
+na ten sam region w pamięci. Typy `float` oraz `int` nie są kompatybline.
+Poprawny program nie może odwoływać się do obiektu typu `float` za pomocą `int*` i na odwrót.
+
+Programista może złamać zasadę:
+
+```cpp
+int main() {
+    int x = 0;
+    
+    x = foo(reinterpret_cast<float*>(&x), &x);
+    std::cout << x << "\n";   // Expect 0?
+}
+```
+
+Zachowania tego programu nie da się przewidzieć.
+W praktyce optymalizator generując kod funkcji `foo` może założyć, że instrukcja `*f = 0.f;` nie może mieć
+wpływu na wartość `*i`. Zamiast odczytywać więc ponownie zwracaną daną pamięci, po prostu zwróci `1` w kodzie maszynowym.
+
+```asm
+foo(float*, int*):
+        mov     DWORD PTR [rsi], 1
+        mov     eax, 1
+        mov     DWORD PTR [rdi], 0x00000000
+        ret
+main:
+        mov     eax, 1
+        ret
+```
+Source: [https://godbolt.org/z/ToeK7dM5Y](https://godbolt.org/z/ToeK7dM5Y)
+
+Więcej na ten temat można znaleźć w [bardzo dobrym artykule](https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8).
 
 ### Dynamiczna alokacja pamięci
 
