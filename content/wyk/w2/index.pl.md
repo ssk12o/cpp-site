@@ -18,6 +18,7 @@ Zakres:
     * wskaźniki
     * struktury, klasy i unie
 * własności `const` i `volatile`
+* rzutowania
 * trwałość obiektów
 * czas życia obiektów
 * operatory `new`/`new[]`/`delete`/`delete[]`
@@ -164,7 +165,7 @@ C++, tak jak C, dostarcza szereg typów całkowitoliczbowych, nie specyfikując 
 jakiej mają być szerokości bitowej. Narzuca jedynie minima.
 Szerokości w typowych implementacjach przedstawiono w kolumnach tabeli:
 
-| **Type**             | **C++ Standard** | **LP32** | **ILP32** | **LLP64** | **LP64** |
+| **Typ**              | **Standard C++** | **LP32** | **ILP32** | **LLP64** | **LP64** |
 |----------------------|------------------|----------|-----------|-----------|----------|
 | `char`               | \>= 8            | 8        | 8         | 8         | 8        |
 | `signed char`        | \>= 8            | 8        | 8         | 8         | 8        |
@@ -188,7 +189,8 @@ Co pozwala na teoretyczną implementację z 64-bitowymi bajtami i wszystkimi pow
 równymi 1. To ciekawa zaszłość historyczna: istniały maszyny z bajtami rozmiarów od 1 do 42 bitów.
 Programy nie powinny zakładać żadnych rozmiarów, tylko korzystać z operatora `sizeof()` do ich pozyskania.
 
-Co często zaskakuje, dopiero od C++20, typy ze znakiem (signed) muszą być reprezentowane standardowym kodem uzupełnień do dwóch.
+Co często zaskakuje, dopiero od C++20, typy ze znakiem (signed) muszą być reprezentowane standardowym kodem uzupełnień
+do dwóch.
 
 Arytmetyka liczb **bez znaku** jest dobrze określona, przepełnienia zawsze skutkują _zawijaniem_ modulo
 `2^n`.
@@ -225,12 +227,31 @@ przeznaczone do przechowywania znaków:
 * `char` - nie wiadomo czy jest ze signed, czy unsigned, ale to najlepszy typ do przechowywania znaków
 * `signed char` - jednobajtowa liczba ze znakiem
 * `unsigned char` - jednobajtowa liczba bez znaku, typ używany do wglądu w bajtową reprezentację obiektów
-* `wchar_t` - szerokie znaki, zależy od platformy, w praktyce 32-bit na Linux, 16-bit na Windows 
+* `wchar_t` - szerokie znaki, zależy od platformy, w praktyce 32-bit na Linux, 16-bit na Windows
 * `char8_t` - znaki w kodowaniu UTF-8
 * `char16_t` - znaki w kodowaniu UTF-16
 * `char32_t` - znaki w kodowaniu UTF-32
 
-Typ `unsigned char` ma bardzo ważne zastosowanie: można z jego pomocą 
+Każdy typ znakowy ma swój sposób tworzenia literałów:
+
+| Typ        | Kodowanie | Znak    | Ciąg znaków |
+|------------|-----------|---------|-------------|
+| `char`     | ASCII     | `'a'`   | `"abcd"`    | 
+| `wchar_t`  | ?         | `L'a'`  | `L"abcd"`   | 
+| `char16_t` | UTF-16    | `u'a'`  | `u"abcd"`   | 
+| `char32_t` | UTF-32    | `U'a'`  | `U"abcd"`   | 
+| `char8_t`  | UTF-8     | `u8'a'` | `u8"abcd"`  |
+
+```cpp
+char32_t c = U'猫';
+const char32_t cstr[] = U"🌍🚀🧑";
+std::u32string str = U"🌍🚀🧑";
+```
+Source: [chars.cpp](chars.cpp)
+
+##### Reprezentacja obiektów
+
+Typ `unsigned char` ma bardzo ważne zastosowanie: można z jego pomocą
 analizować reprezentację wszystkich obiektów w pamięci:
 
 ```cpp
@@ -241,10 +262,32 @@ for (std::size_t i = 0; i < sizeof(x); ++i) {
               << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(bytePtr[i]) << "\n";
 }
 ```
+
 Source: [objrep.cpp](objrep.cpp)
 
 > Typ `unsigned char` jest jedynym typem, który na to pozwala. Dobieranie się do pamięci
-obiektów za pomocą wskazań na inne typy jest niepoprawne!
+> obiektów za pomocą wskazań na inne typy jest niepoprawne!
+
+##### Surowe literały znakowe
+
+Umieszczanie znaków specjalnych, w szczególności końca linii w stringach wymaga poprzedzania ich backslashami:
+
+```cpp
+char txt = "hello\nworld!";
+```
+
+Czasem, w przypadku długich, sformatowanych tekstów nie jest to wygodne ani czytelne. Nowszy standard C++ pomaga
+dostarczając nową składnię `R(<string>)` niewymagającą escapowania:
+
+
+```cpp
+const char* prog = R"(
+int main() {
+    int x = 10;
+    return x;
+}
+)";
+```
 
 #### Typy zmiennoprzecinkowe
 
@@ -269,10 +312,6 @@ func(NULL); // ambiguous
 ```
 
 Wartości typu `nullptr_t` są konwertowalne na dowolny inny typ wskaźnikowy.
-
-#### Konwersje
-
-TODO
 
 #### Wskaźniki
 
@@ -369,9 +408,38 @@ switch(r)
 }
 ```
 
-`enum class`
+Enumeracje przechowują liczbę całkowitą pewnego typu. Enumeratory to stałe tego typu.
+Typ jest wybierany automatycznie, tak żeby pomieścił wszystkie możliwe wartości, chyba że go wymusimy:
 
-TODO
+```cpp
+enum Color : unsigned char { red, green, blue };
+```
+
+Enumeracje podlegają niejawnemu rzutowaniu na liczby:
+
+```cpp
+void foo(int x) { ... }
+
+Color c = red;
+foo(c);
+```
+
+Enumeratory `red`, `green`, `blue` są stałymi widocznymi w tym samym zakresie, w którym zdefiniowana jest enumeracja.
+
+To _zaśmiecanie_ przestrzeni nazw i brak kontroli typów przy konwersjach skłoniło język do wprowadzenia silnych enumeracji, przy których enumeratory
+trzeba klasyfikować typem enuma:
+
+```cpp
+enum class Color { red, green, blue };
+Color r = Color::red;
+ 
+switch(r)
+{
+    case Color::red  : std::cout << "Color::red\n";   break;
+    case Color::green: std::cout << "Color::green\n"; break;
+    case Color::blue : std::cout << "Color::blue\n";  break;
+}
+```
 
 ### Struktury i klasy
 
@@ -399,6 +467,7 @@ Rozmiar struktur podobnie jak rozmiar tablic wynosi co najmniej tyle ile zsumowa
 S s = {'a', 3};
 static_assert(sizeof(S) == 8, "surprise!");
 ```
+
 Source: [structures.cpp](structures.cpp)
 
 Struktury i klasy można przypisywać. Domyślnie takie przypisanie, przypisuje pole po polu.
@@ -411,7 +480,7 @@ S copy = s;
 ### Tablice
 
 Tablice to obiekty typu `T[n]` składające się z `n` następujących po sobie
-podobiektów typu `T`. Mają stały rozmiar `n` wynikający z ich typu, niezmienny 
+podobiektów typu `T`. Mają stały rozmiar `n` wynikający z ich typu, niezmienny
 od początku do końca życia tablicy.
 
 ```cpp
@@ -459,7 +528,7 @@ f(a); // ok
 f(p);
 ```
 
-Nie podając rozmiaru uzyskujemy niekompletny typ `T[]`. Można deklarować zmienne takiego typu, 
+Nie podając rozmiaru uzyskujemy niekompletny typ `T[]`. Można deklarować zmienne takiego typu,
 tak samo, jak wskaźniki do zadeklarowanych tylko struktur:
 
 ```cpp
@@ -473,7 +542,7 @@ int gtab[] = {1, 2, 3}; // definicja
 ```
 
 Te własności, pochodzące jeszcze z C są nieintuicyjne, zwłaszcza w przypadku wielowymiarowych tablic.
-C++11 dostarczył typ `std::array<T, N>`, który jest 
+C++11 dostarczył typ `std::array<T, N>`, który jest
 strukturą opakowującą tablicę. Da się ją kopiować,
 budować do niej wskaźniki, referencje, tak jak zwykle:
 
@@ -483,24 +552,311 @@ std::array<int, 3> ay;
 ay = ax;
 ```
 
-### Własności const i volatile
+### Własności `const` i `volatile`
 
 Każdy typ może być dodakowo kwalifikowany słowami kluczowymi `const` i/lub `volatile`.
-`const` czyni obiekty tego typu niemodyfikowalnymi. `volatile` 
+* `const` czyni obiekty tego typu niemodyfikowalnymi po ich utworzeniu
+* `volatile` tworzy obiekty, których zmiany w pamięci muszą być _widoczne z zewnątrz programu_.
 
-# Trwałość obiektów
+Kompilator jest zobowiązany przetłumaczyć każdy zapis i odczyt obiektów typu `volatile` na odpowiadające operacje
+zapisu/odczytu z pamięci fizycznej. Nie może ich wyoptymalizować (tak jak to się dzieje w przypadku zwykłych zmiennych).
 
-heap/stack
+Aby zapewnić, że własności `const`/`volatile` będą zachowane przy dostępie do obiektu 
+z dowolnego miejsca w programie, również za pośrednictwem wskaźników i referencji, te przenoszą
+tę informację w swoim typie. Do zmiennych typu `const int` można tworzyć tylko wskaźniki na typ `const int`.
+Do znaków tablicy typu `volatile char[10]` można dobierać się tylko za pomocą wskaźnika `volatile char*`.
 
-TODO
+```cpp
+void set(int* ptr) {
+    *ptr = 30;
+}
 
-# Czas życia obiektów
+void setref(int& i) {
+    i = 40;
+}
 
-TODO
+const int x = 10;
+const int* cpx = &x;
+// int* p = &x; //! porzucenie const
+// int* px = cpx; //! porzucenie const
+// *cpx = 10; //! zapis do const
+// set(cpx); //! porzucenie const przy przekazaniu parametru
+// setref(*cpx); //! porzucenie const przy przekazaniu parametru
 
-# Dynamiczna alokacja pamięci
+const int& crx = x;
+// int& rx = x; //! porzucenie const
+// setref(crx); //! porzucenie const przy przekazaniu parametru
+```
 
-Operatory `new`/`new[]`/`delete`/`delete[]`
+Silna kontrola typów zapewnia bezpieczeństwo. Mimo to, za pomocą sprytnych zabiegów da się ominąć ten mechanizm, np.:
+
+```cpp
+set((int*)cpx); 
+```
+
+Taki program ma niezdefiniowane zachowanie. Zapis do obiektów typu `const` jest groźnym błędem, tak
+jak dostęp do zmiennych typu `volatile` za pomocą zwykłych wskaźników.
+
+Zmienne typów złożonych też mogą korzystać z tych kwalifikatorów:
+
+```cpp
+const std::string str = "Hello";
+char c = str[3]; // odczyt ok!
+// str[3] = 'a'; //! modyfikacja obiektu const
+std::size_t s = str.size(); // ok! .size() nie modyfikuje
+// str.append(" world"); //! modyfikacja obiektu const
+```
+
+#### Rzutowania
+
+C++ ma 4 operatory rzutowania: `static_cast`, `const_cast`, `reinterpret_cast`, `dynamic_cast`
+
+`static_cast<T>(U)`: bezpiecznie konwertuje argument typu `U` na typ `T`. Kompilator
+sprawdza, czy konwersja jest bezpieczna.
+
+```cpp
+int i = 3;
+float f = static_cast<float>(i);
+int flag = static_cast<int>(true);
+```
+
+Nie pozwala na konwersje między typami niezwiązanymi:
+
+```cpp
+int x;
+float* f = static_cast<float*>(&x); //!
+```
+
+Nie pozwala np. na porzucenie `const`.
+
+```cpp
+const int i = 1;
+int* ptr = static_cast<int*>(&i); //!
+```
+
+`const_cast<T>()`: dodaje lub usuwa kwalifikatory `const`/`volatile`.  Nie pozwala
+na zmianę typu.
+
+```cpp
+const int i = 1;
+int* ptr = const_cast<int*>(&i);
+*ptr = 3; // to i tak błąd, wkazywany obiekt jest const
+```
+
+`dynamic_cast<T>` służy do bezpiecznego rzutowania wskaźników i referencji na typy pochodne lub bazowe.
+Współpracuje z mechanizmem dziedziczenia, o którym będziemy mówić poźniej.
+
+`reinterpret_cast<T>` potrafi zmienić typ wskazywany wskaźnika/referencji na dowolny inny.
+Nie może zmienić kwalifikacji `const`/`volatile`. Można go użyć, tylko jeżeli
+wiemy, że we wskazywanej pamięci istotnie jest obiekt typu T.
+
+```cpp
+float f = 1.0f;
+int* i = reinterpret_cast<int*>(&f);
+*i = 3; //! błąd - tam nie ma int'a
+```
+
+### Dynamiczna alokacja pamięci
+
+Język C++ wprowadza jawne operatory `new`/`new[]`/`delete`/`delete[]` do tworzenia i usuwania obiektów alokowanych 
+dynamicznie. Znane z C funkcje `std::malloc`/`std::free` są dostępne, ale ich użycie jest nietypowe w programach C++.
+
+```cpp
+int main() {
+    int* ptr = new int;
+    int* tab = new int[10];
+    
+    *ptr = 10;
+    for (int i = 0; i < 10; i++) {
+        tab[i] = i;
+    }
+    
+    delete ptr;
+    delete[] tab;
+}
+```
+
+Operator `new` jest silnie typowany. Wymaga podania typu alokowanych obiektów.
+To kluczowa różnica w stosunku do C zwiększająca bezpieczeństwo.
+`new T` robi tak naprawdę 2 następujące po sobie rzeczy:
+* alokuje pamięć rozmiaru `sizeof(T)`
+* inicjalizuje obiekt typu `T` w zaalokowanej pamięci.
+`new T[n]` tworzy `n` obiektów:
+* alokuje pamięć rozmiaru `sizeof(T[n])`
+* iteracyjnie inicjalizuje obiekt typu `T` w kolejnych komórkach pamięci
+
+Tak samo, jak obiekty automatyczne można inicjalizować w momencie tworzenia,
+obiekty alokowane dynamiczne również:
+```cpp
+int* x = new int{4};
+```
+Wartoć `4` będzie użyta do zainicajlizowania nowo powstałego obiektu w drugim kroku.
+
+
+Operator `delete` też jest silnie typowany. Jest wywoływany na wskaźniku, typu `T*`.
+`delete` również robi 2 rzeczy:
+* niszczy obiekt typu `T` we wskazywanej pamięci
+  * dla typów prostych fizycznie nie robi nic, dla klas będzie tu wywoływany konstruktor
+* dealokuje pamięć rozmiaru `sizeof(T)`, wskazywaną przez operand
+
+Podobnie, `delete[]` wpierw niszczy interacyjnie wszystkie elementy tablicy,
+a potem dealokuje jej pamięć.
+
+#### Błędy alokacji
+
+Pamięci zawsze może zabraknąć. `new` i `new[]` raportują błędy za pomocą wyjątków.
+Jeżeli alokacja się nie powiedzie operator `new` _rzuca_ wyjątek:
+
+```cpp
+void allocate_all_the_thing() {
+    for(int i = 0; i < 1000000; ++i) {
+        std::cout << "allocating [" << i << ']' << std::endl;
+        int* tab = new int[100'000'000]; // 400MB
+    }
+}
+```
+
+Wyjątek powoduje natychmiastowe wychodzenie z funkcji, w górę stosu wywołań, aż do `main()`.
+Wyjątek opuszczając funkcję `main` kończy program z błędem, wywłoując `std::terminate()`:
+
+```
+terminate called after throwing an instance of 'std::bad_alloc'
+  what():  std::bad_alloc
+```
+
+Wyjątek można przechwycić za pomocą bloku `try { ... } catch(...) {...}`:
+
+```cpp
+try
+{
+    int* tab = new int[100'000'000]; // 400MB    
+} catch (std::bad_alloc& e) {
+    std::cout << "bad_alloc" << std::endl;
+    return;
+}
+```
+Source: [new.cpp](new.cpp)
+
+Zwykle nie ma takiej potrzeby. Żeby przechwytywanie `std::bad_alloc` miało sens, program musiałby umieć
+sensownie obsłużyć błąd braku pamięci. Wyjątki znoszą z programisty obowiązek jawnego sprawdzania, czy funkcja alokująca
+zwróciła `NULL`, tak jak to się działo w C.
+Program, który chce obsłużyć błąd alokacji, może też zrezygnować z domyślnego trybu raportowania błędów przez wyjątki
+i oczekiwać pustego wskaźnika:
+
+```cpp
+int* tab = new (nothrow) int[100'000'000];    
+if (tab == nullptr) {
+    // allocation failed
+}
+```
+
+### Trwałość pamięci obiektów
+
+Obiekty potrzebują miejsca w pamięci. To miejsce ma swój określony czas życia. C++ klasyfikuje 4 typy trwałości pamięci obiektów:
+automatyczna, dynamiczna, statyczna i związana z wątkiem (thread_local).
+
+#### Obiekty automatyczne
+
+Obiekty zadeklarowane w zakresie bloku `{ ... }`, np. w ciele funkcji lub niżej, są automatycznie alokowane
+przy wejściu kontroli do bloku i dealokowane przy wyjściu z bloku.
+
+Nie dotyczy to obiektów oznaczonych jako `extern`, `static`, lub `thread_local` ani obiektów deklarowanych na poziomie przestrzeni nazw.
+
+```cpp
+std::string foo(int y) { // początek życia pamięci x
+  int x = 0;
+  
+  if (x > y) { // początek życia pamięci str 
+    std::string str = "asdf";
+    // ...
+    return str;
+  } // koniec życia pamięci str
+  
+  return "asdf";
+} // koniec życia pamięci x
+```
+
+Fizycznie pamięć obiektów automatycznych jest pozyskiwana ze **stosu**.
+W momentach wejścia do bloku kompilator generuje instrukcje zwiększające stos o rozmiar wszystkich obiektów
+zadeklarowanych w bloku. W momencie wyjścia generuje instrukcje odwrotne.
+
+#### Obiekty dynamiczne
+
+Pamięć na obiekty alokowane dynamiczne musi być jawnie pozyskana i zwolniona za pomocą operatorów `new`,`delete`, lub
+funkcji bibliotecznych takich jak `malloc`/`free`. Nie jest zarządzana i zwalniana automatycznie, programista
+jest odpowiedzialny za czas życia tej pamięci.
+
+Fizycznie pamięc obiektów dynamicznych jest pozyskiwana ze **sterty**, czyli osobnego
+segmentu (lub segmentów) pamięci pozyskanej od systemu operacyjnego, rosnącego z przybywającymi alokacjami,
+malejącego z dealokacjami. Biblioteka standardowa implementuje algorytm zarządzania stertą, który układa 
+na niej obiekty, oznacza je jako zwolnione, pozyskuje i oddaje pamięć do systemu operacyjnego.
+
+#### Obiekty statyczne
+
+Pamięć obiektów statycznych alokowana jest na początku programu i zwalniana na końcu.
+Dotyczy to wszystkich obiektów deklarowanych w zakresie przestrzeni nazw, jak i zmiennych blokowych
+opatrzonych słowami `static` lub `extern`:
+
+```cpp
+int globaxl_x = 3;
+namespace ns {
+  std::string text = "asdf";
+}
+
+void foo() {
+  static int counter = 0;
+}
+```
+
+W powyższym przykładzie pamięć na wszystkie 3 obiekty: `x`, `text` i `counter` jest alokowana na starcie programu.
+Fizycznie takie zmienne są lokowane w dedykowanym segmencie pamięci statycznej. Dzieje się to w momencie ładowania
+programu do pamięci operacyjnej.
+
+#### Obiekty `thread_local`
+
+Podobnie do obiektów statycznych, obiekty `thread_local` są alokowane z początkiem życia wątku i zwalniane z jego końcem.
+
+### Czas życia obiektów
+
+Każdy obiekt ma **czas życia** w trakcie wykonania programu.
+To jest inna cecha niż trwałość (czas życia) jego pamięci.
+W ogólności pamięć musi żyć przynajmniej tyle, co sam obiekt.
+
+Czas życia obiektu typu `T` rozpoczyna się gdy:
+* program pozyskał odpowiednią pamięć na obiekt: rozmiaru `sizeof(T)` i wyrównaniu `alignof(T)`.
+* zakończyła się inicjalizacja obiektu
+
+To rozłączne kroki. Program może niezależnie pozyskać pamięć,
+a potem ręcznie utworzyć w tej pamięci obiekt i go zainicjalizować:
+
+```cpp
+void reuse() {
+  alignas(int) char storage[sizeof(int)]; // pamięć
+  int* ptr = new (&storage) int{3}; // utworzenie int w pamięci tablicy
+  *ptr = 3;
+}
+```
+
+Czas życia obiektu typu `T` kończy się w kilku sytuacjach:
+* zniszczenia obiektu w typów prostych
+* rozpoczęcie wykonania destruktora klasy `T`
+* zwolnienia pamięci obiektu
+* utworzenia innego obiektu w tej samej pamięci
+
+Te reguły pozwalają na wykorzystanie pamięci jednego obiektu
+do utworzenia innych obiektów.
+
+```cpp
+void reuse() {
+  alignas(int) char storage[sizeof(int)]; // pamięć
+  int* ptr = new (&storage) int{3}; // utworzenie int w pamięci tablicy
+  *ptr = 3;
+  float* fptr = new (&storage) float{1.0f}; // utworzenie float kończy życie int
+  *fptr *= 2.0f;
+}
+```
+
+> Dostęp do obiektu poza czasem jego życia jest błędem!
 
 ### Typowe błędy
 
