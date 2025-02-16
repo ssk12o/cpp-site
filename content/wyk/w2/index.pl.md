@@ -1079,7 +1079,7 @@ WRITE of size 25 at 0x7c3308f0902a thread T0
     #1 0x5769492672f4 in main asan/stack-buffer-overflow.cpp:6
     #2 0x7c330ae2a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
     #3 0x7c330ae2a28a in __libc_start_main_impl ../csu/libc-start.c:360
-    #4 0x576949267164 in _start (/home/saqq/repos/cpp-site/content/wyk/w2/prog.exe+0x1164) (BuildId: 69d828a34f8704fac3eb3dc2ecfaaa8eaf256b24)
+    #4 0x576949267164 in _start (/cpp-site/content/wyk/w2/prog.exe+0x1164) (BuildId: 69d828a34f8704fac3eb3dc2ecfaaa8eaf256b24)
 ```
 
 #### Jak to działa
