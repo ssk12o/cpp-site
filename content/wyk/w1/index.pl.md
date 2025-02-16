@@ -14,6 +14,8 @@ Zakres:
 * przestrzenie nazw
 * one definition rule
 * słowa kluczowe `static`/`extern`
+* pliki nagłówkowe
+* słowo kluczowe `inline`
 * biblioteki statyczne i dynamiczne
 * algorytm linkera
 * moduły
@@ -33,7 +35,7 @@ C++ nadal jest jednym z **najpopularniejszych** języków, trzymając się 2-3 p
 https://www.tiobe.com/tiobe-index/cplusplus/.
 Znajduje bardzo szerokie zastosowanie, zwłaszcza w projektach wymagających najwyższej wydajności.
 
-Ten język jest **wszechobecny**. Cięzko znaleźć platformę sprzętową, na której nie dałoby się go wykorzystać (podobnie
+Ten język jest **wszechobecny**. Ciężko znaleźć platformę sprzętową, na której nie dałoby się go wykorzystać (podobnie
 do C).
 Od urządzeń bez systemu operacyjnego (_baremetal_), przez aplikacje serwerowe, desktopowe, rozproszone systemy HPC,
 aplikacje graficzne i gry komputerowe. Jako jedno z nielicznych tego typu narzędzi
@@ -63,7 +65,7 @@ z czego będziemy bogato korzystać.
 
 ### Hello World
 
-Zacznijmy od najprostrzego programu w C++ zaimplementowanego w jednym pliku `hello.cpp`:
+Zacznijmy od najprostszego programu w C++ zaimplementowanego w jednym pliku `hello.cpp`:
 
 ```cpp
 #include <iostream>
@@ -111,11 +113,11 @@ graph LR
 Standard C++ nie mówi nic na temat szczegółów realizacji
 kompilatora. W szczególności źródła nie muszą być plikami
 w potocznym rozumieniu (niektóre systemy nie mają plików).
-Definiuje uproszczony schemat tego jak proces budowania
+Definiuje uproszczony schemat tego, jak proces budowania
 ma działać, który jest realizowany różnie przez różnych dostawców
 narzędzi (tzw. implementacja języka).
 
-Dzisiaj można łatwo używać kompilatorów online do prostych nauki i pisania prostych programów, np. https://godbolt.org/.
+Dzisiaj można używać kompilatorów online do nauki i pisania prostych programów, np. https://godbolt.org/.
 
 Po wygenerowaniu pliku wyjściowego możemy go uruchomić:
 
@@ -123,7 +125,7 @@ Po wygenerowaniu pliku wyjściowego możemy go uruchomić:
 ./hello.gcc
 ```
 
-> W praktyce do programowania w C++, tak jak w przypadku innych języków,
+> W praktyce, do programowania w C++, tak jak w przypadku innych języków,
 > używamy zintegrowanego środowiska programistycznego (IDE). Wykład celowo demonstruje
 > narzędzia od podstaw, mając na celu przybliżenie całego ekosystemu, a nie tylko języka samego w sobie.
 
@@ -133,7 +135,7 @@ Przeanalizujmy strukturę programu. Rozpoczynamy od **dyrektywy preprocesora**:
 #include <iostream>
 ```
 
-Kompilator czytając plik źródlowy wykonuje w pierwszej kolejności interpretacji takich dyrektyw.
+Kompilator, czytając plik źródłowy, dokonuje w pierwszej kolejności interpretacji takich dyrektyw.
 `#include` wkleja treść pliku `iostream` w miejscu dyrektywy.
 
 [Nagłówki biblioteki standardowej C++](https://en.cppreference.com/w/cpp/header) nie mają rozszerzeń.
@@ -170,11 +172,11 @@ Aby rozpocząć pisanie prostych programów, warto poznać kilka użytecznych na
 #### Standardowe strumienie I/O
 
 Nagłówek [\<iostream\>](https://en.cppreference.com/w/cpp/header/iostream) dostarcza globalne zmienne reprezentujące
-strumienie wejścia/wyjścia: `std::cout`, `std::cin`, `std::cerr`, `std::clog`. Biblioteka C zachowywała się podobnie
+strumienie wejścia/wyjścia: `std::cout`, `std::cin`, `std::cerr`, `std::clog`. Biblioteka C zachowywała się podobnie,
 dostarczając globalne `stdin`, `stdout` i `stderr`.
 
 Strumienie wyjściowe definiują operatory
-`<<` [dla różnych typów podstawowych](https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt)
+`<<` [dla różnych typów podstawowych](https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt),
 pozwalające w prosty sposób formatować je na wyjście.
 
 ```cpp
@@ -273,12 +275,12 @@ przez [9 faz tłumaczenia](https://en.cppreference.com/w/cpp/language/translatio
 
 1. Mapowanie znaków źródłowych
 
-Wejście kompilatora jest, znak po znaku, mapowane na zbiór znaków standardowych,
-uspójniając reprezentację tekstową kodu źródłowego pomiędzy systemami operacyjnymi / platformami
+Wejście kompilatora jest znak po znaku mapowane na zbiór znaków standardowych,
+uspójniając reprezentację tekstową kodu źródłowego pomiędzy systemami operacyjnymi / platformami.
 
 2. Sklejanie linii
 
-Linie kończące się '\' są łączone z następnymi,
+Linie kończące się `\` są łączone z następnymi.
 
 3. Lekser
 
@@ -295,7 +297,7 @@ Pliki załączane dyrektywą `#include` rekursywnie przechodzą przez fazy 1 - 4
 
 Literały znakowe i ciągi znaków są kodowane do docelowej reprezentacji w pamięci, np. UTF-8, UTF-16. 
 
-6. Łączenie string'ów
+6. Łączenie stringów
 
 Następujące po sobie literały są konkatenowane:
 `"hello, "` `"world"` -> `"hello, world"`
@@ -307,7 +309,7 @@ Generacja kodu wynikowego dla danej jednostki translacji.
 
 8. Instancjonowanie szablonów
 
-Generacja kodu dla wykorzystywanychw jednostce translacji _szablonów_: typów generycznych języka C++.
+Generacja kodu dla wykorzystywanych w jednostce translacji _szablonów_: typów generycznych języka C++.
 
 9. Linkowanie
 
@@ -450,9 +452,9 @@ potrzebny jest _system budowania_. Dzięki niemu programiści chcący zbudować 
 mogą typowo wydać jedno polecenie. System budowania
 w postaci plików/skryptów zawiera flagi kompilacji, zależności projektu, skrypty instalacyjne, generatory kodu, itd.
 
-Najprostrzym systemem z którego będziemy początkowo korzystać jest [Makefile](https://makefiletutorial.com/).
+Najprostszym systemem, z którego będziemy początkowo korzystać jest [Makefile](https://makefiletutorial.com/).
 
-Korzystając z makefile projekt opisują pliki tekstowe zawierające deklaracje reguł w formacie:
+Korzystając z makefile, projekt opisują pliki tekstowe zawierające deklaracje reguł w formacie:
 
 ```makefile
 targets: prerequisites
@@ -470,7 +472,7 @@ Makefile uruchamia reguły, tylko jeżeli:
 * plik wyjściowy nie istnieje
 * (lub) plik wyjściowy jest starszy niż zależności reguły
 
-Najprostrzy system budowania dla dwuplikowego projektu wyglądałby tak:
+Najprostszy system budowania dla dwuplikowego projektu wyglądałby tak:
 
 ```makefile
 all: prog.exe
@@ -528,7 +530,6 @@ Deklaracje:
 * **mogą** nadać im nazwę,
 * **mogą** definiować ich właściwości;
 
-Deklaracje, które w pełni opisują element, pozwalając na jego użycie, to również **definicje**.
 
 ```cpp
 /* przykłady deklaracji */
@@ -540,6 +541,7 @@ struct S {
 }
 ```
 
+Deklaracje, które w pełni opisują element, pozwalając na jego użycie, to również **definicje**.
 Słowo kluczowe `extern` w przypadku zmiennych zmienia definicję w deklarację.
 
 ```cpp
@@ -844,8 +846,8 @@ const int ci;
 
 Ciekawy detal różniący języki C i C++:
 
-> Names at the top-level namespace scope (file scope in C) that are const and not extern have external linkage in C, but
-> internal linkage in C++.
+> Stałe w zakresie globalnej przestrzeni nazw C++ (zakresie pliku w C) mają linkowanie zewnętrzne w C,
+> a wewnętrzne w C++.
 
 ### Pliki nagłówkowe
 
@@ -893,6 +895,31 @@ Source: [point.cpp](point.cpp)
 
 Bariery kompilacji (`#ifndef POINT_HPP`) blokują wielokrotne załączenie tego pliku,
 a przez to nie dopuszczają do wielokrotnego definiowania, np. `Point`.
+
+### Słowo kluczowe `inline`
+
+Czasami, mimo wszystko, wygodnie jest umieścić definicję zmiennej lub funkcji w nagłówku.
+W przypadku prostych elementów, krótkich funkcji podział zmniejsza czytelność i nie daje dużo zysku,
+jeśli chodzi o czas kompilacji. C++ posiada w takim celu funkcje i zmienne `inline`, które mogą być
+definiowane wielokrotnie, w wielu jednostkach translacji, o ile ich definicje są zgodne:
+
+```cpp
+// point.hpp
+inline int dist(Point p, Point q) {
+    int dx = p.x - q.x;
+    int dy = p.y - q.y;
+    return factor * (dx * dx + dy * dy);
+}
+
+inline int factor = 2;
+```
+
+Załączenie takiego nagłówka w wielu plikach `*.cpp` nie wywoła błędu linkera.
+Linker zdeduplikuje funcje i zmienne pozostawiając jedną kopię każdego symbolu w gotowym programie.
+
+Historycznie słowo `inline` było podpowiedzią dla optymalizatora, sugerującą wklejenie kodu funkcji
+w miejsca wywołania. Kompilatory stosowały tę optymalizację, bez względu na to, czy funkcja była `inline`
+czy nie. Dlatego C++ mógł wykorzystać to słowo kluczowe w innym celu.
 
 ### Biblioteki
 
