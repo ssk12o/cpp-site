@@ -22,7 +22,7 @@ Wtorki, godz. 12:15 - 14:00, s. 101
 | 20.05.2025 | [W6 - Polimorfizm i Wyjątki 2]({{< ref "wyk/w7" >}}) |
 | 27.05.2025 | [W7 - Szablony 1]({{< ref "wyk/w7" >}})              |
 | 03.06.2025 | [W7 - Szablony 2]({{< ref "wyk/w7" >}})              |
-| 10.06.2025 | Kolokwium                                            |
+| 10.06.2025 | Konsultacje                                          |
 
 ## Zajęcia laboratoryjne
 
