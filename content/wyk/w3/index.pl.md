@@ -16,11 +16,10 @@ Zakres:
 * konstruktory kopiujące i operatory przypisania
 * konstruktory przenoszące i operatory przeniesienia
 * reguła 3-ch, reguła 5-ciu
-* widoczność
-* przeciążanie operatorów
-* konwersje
-* literały zdefiniowane przez użytkownika
-* składowe statyczne
+* ~~przeciążanie operatorów~~
+* ~~konwersje~~
+* ~~literały zdefiniowane przez użytkownika~~
+* ~~składowe statyczne~~
 
 ## Programowanie Obiektowe
 
@@ -646,3 +645,449 @@ class Counter {
 
 Struktur konwencjonalnie zwykle używamy do małych prostych agregatów. Nie jest to obowiązkiem.
 
+## Konstruktory
+
+Stan obiektu zawsze powinien być poprawny. Obiekty hermetyzują stan. 
+Udostępniają publiczny interfejs do bezpiecznego modyfikowania tego stanu.
+Rozważmy klasę modelującą stos ograniczonego rozmiaru:
+
+```cpp
+class Stack
+{
+    int tab[10];  //!< elementy stosu
+    int size;     //!< aktualny rozmiar
+
+public:
+    void push(int val) {
+      if (size == 10) return; 
+      tab[size++] = val; 
+    }
+    
+    int pop() {
+        if (size == 0) return -1;
+        return tab[--size];
+    }
+
+    int top() const { return size > 0 ? tab[size - 1] : -1; }
+    
+    bool empty() const { return size == 0; }
+};
+```
+Source: [stack.cpp](stack.cpp)
+
+Spróbujmy takiego stosu użyć:
+
+```cpp
+int main() {
+    Stack s;
+
+    s.push(1);
+    s.push(2);
+    s.push(3);
+
+    while (!s.empty())
+    {
+        std::cout << s.pop() << std::endl;
+    }
+    
+    return 0;
+}
+```
+
+Rezultat?
+
+```
+Process finished with exit code 139 (interrupted by signal 11:SIGSEGV)
+```
+
+Stan początkowy jest niepoprawny. Czym inicjalizowane są pola klasy? Obecnie niczym. Wartość `size` jest 
+nieznana. Korzystanie z niej ma niezdefiniowane zachowanie.
+
+Klasa `Stack` ma **niezmienniki**: właności stanu, które powinny być prawdziwe
+przez cały czas życia. Tutaj `0 <= size <= 10`. Zmienna `size`, jak i cały stan jest prywatny - i to dobrze!. 
+Użytkownik klasy, nawet gdyby chciał, to nie może go ręcznie zainicjalizować. Klasa musi zrobić to sama!
+
+Do tego celu służy **konstruktor**: specjalna funkcja składowa, nazywająca się dokładnie tak samo jak klasa:
+
+```cpp
+class Stack
+{
+    int tab[10];  //!< elementy stosu
+    int size;     //!< aktualny rozmiar
+
+public:
+    Stack() : size{0} // lista inicjalizacyjna 
+    {
+       // ciało konstruktora
+    }
+    
+    // ...
+};
+```
+
+Konstruktory nie mają typu zwracanego, bo nic nie zwracają. Służą do inicjalizacji obiektu w jakimś regionie pamięci.
+
+Konstruktor ma dostęp do nowo-tworzonego obiektu, można w nim posługiwać się wskaźnikiem `this`, chociaż 
+z racji tego, że jest to obiekt _w trakcie inicjalizacji_ `this` nie koniecznie pokazuje na poprawny obiekt.
+
+Konstruktory poza ciałem może mieć tzw. _listę inicjalizacyjną_ w formacie: 
+
+```
+: pole1{inicjalizator}, pole2{inicjalizator}, ...
+```
+
+Lista inicjalizacyjna zawiera wyrażenia inicjalizujące wybrane podobiekty. 
+Podobiekty inicjalizowane są niejako przed wejściem w ciało konstruktora. 
+W momencie wejścia w ciało konstruktora wszystkie obiekty składowe żyją: mają przydzieloną pamięć, ich inicjalizacja,
+jawna czy nie, jest już zakończona. Ciało konstruktora może ich bezpiecznie używać.
+
+> Bez względu na koleność występowania pól na liście, 
+> podobiekty inicjalizowane są w kolejności występowania ich deklaracji w klasie!
+
+Konstruktor klasy stack moglibyśmy napisać na kilka różnych sposobów:
+
+Zainicjalizować jawnie `tab` i `size` na liście. Dzięki temu tablica również będzie wyzerowana:
+
+```
+Stack() : tab{}, size{0}
+{
+}
+```
+
+Pozostawić `tab` i `size` inicjalizowanymi domyślne (śmieciami) i potem to naprawić w ciele:
+
+```
+Stack()
+{
+   size = 0;
+}
+```
+
+Dostarczyć inicjalizator przy definicji składowej, a nie na liście. Konstruktor może być wtedy pusty.
+
+```
+class Stack
+{
+  int tab[10]; 
+  int size = 0;
+
+public:
+  Stack() {}
+    
+  // ...
+};
+```
+
+Nie pisać konstruktora w ogóle. Kompilator wygeneruje go za nas:
+
+```cpp
+class Stack
+{
+  int tab[10];
+  int size = 0;
+
+public:
+  // Stack() : size{0} {} 
+
+  // ...
+};
+```
+
+Ostatnia składnia powinna być preferowana ze względu na prostotę i czytelność.
+
+### Konstruktor niejawny
+
+Czy tego chcemy, czy nie, jeśli nie zdefiniujemy konstruktora, kompilator sam niejawnie go wygeneruje.
+Taki konstruktor nic nie robi (więc nie jest dobry dla naszej klasy):
+
+```cpp
+class Stack
+{
+  int tab[10];
+  int size;
+
+public:
+  // Stack() {} // konstruktor wygenerowany
+
+  // ...
+};
+```
+
+To samo możemy osiągnąć deklarując jawnie `Stack() = default;`
+
+Możemy też kompilator zmusić do tego, żeby nie generował konsturktora: `Stack() = delete;`
+Wtedy nie będzie się dało stworzyć obiektu typu `Stack`.
+
+### Miejsce wywołania
+
+Konstruktor jest automatycznie wywoływany w momencie tworzenia obiektu. Czyli kiedy? To zależy od jego trwałości.
+
+Dla obiektów automatycznych dzieje się to w momencie napotkania definicji zmiennej:
+
+```cpp
+int main() {
+  std::cout << "hey!";
+  Stack s; // < tu będzie wywołanie konstruktora
+  s.push();
+}
+```
+
+Konstruktory automatycznych obiektów tymczasowych są wywoływnane w momencie ewaluacji wyrażenia:
+```cpp
+int main() {
+  std::cout << "hey!";
+  Stack{}.push(3);
+}
+```
+
+
+Dla obiektów dynamicznych wywołanie konstruktora jest ostatnim etapem przetwarzania operatora `new`:
+
+```cpp
+int main() {
+  std::cout << "hey!";
+  Stack* s = new Stack; // < tu będzie wywołanie konstruktora
+  s->push();
+}
+```
+
+Dla obiektów statycznych wywołanie konstruktora nastąpi jeszcze przed `main()`!
+
+```cpp
+Stack s;
+
+int main() {
+  std::cout << "hey!";
+  s.push();
+}
+```
+
+Tu uwaga:
+
+> Kolejność inicjalizowania obiektów statycznych pomiędzy jednostkami translacji jest niezdefiniowana!
+
+### Argumenty konstruktora
+
+Konstruktory tak jak metody mogą przyjmować parametry. Konstruktory można przeładowywać, dostarczając kilka metod inicjalizacji obiektu.
+
+```cpp
+class Stack
+{
+  int tab[10];
+  int size;
+
+public:
+  Stack() : size{0} {} //!< konstruktor domyślny tworzy pusty stos
+  Stack(int single_elem) : size{1}, tab{single_elem, 0} {} //!< konstruktor Stack(int) tworzy stos z 1 elementem
+  Stack(const std::vector<int>& values) : size{static_cast<int>(values.size())} {
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      tab[i] = values[i];
+    }
+  }
+  Stack(int* values, int num) : size{num} {
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      tab[i] = values[i];
+    }
+  }
+
+  // ...
+};
+
+int main() {
+    int arr[] = {1, 2, 3};
+    std::vector<int> v{1, 2, 3};
+    
+    Stack s;
+    Stack s2(1);
+    Stack s3(arr, 3);
+    Stack s4(v);
+
+    Stack* ps = new Stack;
+    Stack* ps2 = new Stack(1);
+    Stack* ps3 = new Stack(arr, 3);
+    Stack* ps4 = new Stack(v);
+    
+    return 0;
+}
+```
+Source: [stack_constructors.cpp](stack_constructors.cpp)
+
+### Konstruktor domyślny
+
+Konstruktor, który może być wywołany bez podawania parametrów, nazywamy **konstruktorem domyślnym**.
+Klasa, która nie ma konstruktora domyślnego, nie może być zainicjalizowana bezparametrowo:
+
+```cpp
+class A
+{
+    int val;
+
+public:
+    A(int x) : val(x)
+    {
+    }
+};
+
+// A ga;
+A ga(3);
+
+int main()
+{
+    // A a;
+    A a(3);
+    
+    // A* pa = new A;
+    A* pa = new A(3);
+
+    return 0;
+}
+```
+Source: [default_constructor.cpp](default_constructor.cpp)
+
+Dla klas posiadających jakikolwiek konstruktor zdefiniowany przez programistę kompilator **nie generuje** 
+niejawnego konstruktora bezparametrowego!
+
+> Konstruktor, którego wszystkie argumenty mają wartości domyślne, też jest domyślny!
+
+### Konstrukcja podobiektów
+
+Podobiekty klasy muszą być zainicjalizowane przed wejściem w ciało konstruktora.
+To znaczy, że trzeba podać parametry konstruktorów podobiektów na liście inicjalizacyjnej.
+Szczególnie jeżeli podobiekty nie mają konstruktorów domyślnych! Kompilator nie jest w stanie wtedy wygenerować
+konstruktora niejawnego, bo nie wie jak zainicjalizować składowe klasy.
+
+```cpp
+class A {
+    int val;
+public:
+     A(int val = 0) : val{0}{}
+};
+
+class B {
+    int val;
+public:
+    B(int val) : val{0}{}
+};
+
+class C {
+    A a;
+    B b;
+    int val;
+public:
+     C(int a, int b, int c) : a{a}, b{b}, val{c}{}
+     C(int b, int c) : b{b}, val{c}{} //!< ok bo A ma konstruktor domyślny
+};
+
+int main() {
+    C obj(1, 2, 3);
+    return 0;
+};
+```
+
+## Destruktory
+
+W analogii do konstruktorów, klasy posiadają też **destruktory**: specjalne funkcje składowe o nazwie `~NazwaKlasy()`, 
+które są wywoływane w momencie niszczenia obiektu. Jest przydatny do _posprzątania_ stanu obiektu, w szczególności
+zwolnienia zasobów.
+
+* Obiekty automatyczne są niszczone wraz z końcem zakresu, gdzie zostały zdefiniowane. 
+    * Kolejność niszczenia obiektów w tym samym bloku jest odwrotna do kolejności ich konstrukcji (definicji).
+* Obiekty dynamiczne są niszczone w pierwszej fazie wykonania operatora `delete`.
+* Obiekty statyczne są niszczone **po** wykonaniu `main()`.
+
+```cpp
+class A {
+    std::string tag;
+public:
+    A(std::string tag) : tag{tag} { std::cout << "A(" << tag << ")\n"; }
+    ~A() { std::cout << "~A(" << tag << ")\n"; }
+};
+
+class B {
+    std::string tag;
+public:
+    B(std::string tag) : tag{tag} { std::cout << "B(" << tag << ")\n"; }
+    ~B() { std::cout << "~B(" << tag << ")\n"; }
+};
+
+class C {
+    A a;
+    B b;
+    std::string tag;
+public:
+    C(std::string tag) : a{tag}, b{tag}, tag{tag} { std::cout << "C(" << tag << ")\n"; }
+    ~C() { std::cout << "~C(" << tag << ")\n"; }
+};
+
+C a("static");
+
+int main() {
+    C a("automatic");
+    auto pa = new C("dynamic");
+    delete pa;
+    return 0;
+}
+
+```
+Source: [destructor.cpp](destructor.cpp)
+
+Najpierw wykonywane jest ciało destruktora danej klasy, dopiero potem destruktory jej podobiektów.
+Moment rozpoczęcia wykonania destruktora jest jednocześnie momentem końca życia obiektu.
+Dzięki tej kolejności destruktor klasy może korzystać ze składowych.
+Destruktory podobiektów wykonują się w kolejności odwrotnej do kolejności ich konstrukcji:
+
+```
+A(automatic)
+B(automatic)
+C(automatic)
+...
+~C(automatic)
+~B(automatic)
+~A(automatic)
+```
+
+Destruktor też nie zwraca żadnej wartości. Nie może mieć argumentów (no bo jak je przekazać).
+
+## RAII
+
+Konstruktory i destruktory są wywoływane automatycznie. 
+Dla poprawnie zaimplementowanych klas programista nie musi ręcznie inicjalizować obiektu. 
+Nie musi też go ręcznie _czyścić_. Kompilator wstawia te wywołania niejawnie.
+Ma to szczególne znaczenie, jeżeli obiekty klasy zarządzają zasobami, które trzeba jawnie alokować i zwalniać, np. pamięć.
+
+Przykładowo: zaimplementujmy stos, którego rozmiar będzie dynamiczny, ustalany w trakcie konstrukcji:
+
+```cpp
+class DynamicStack
+{
+    const int capacity;
+    int* tab;
+    int size;
+
+public:
+    DynamicStack(int capacity = 10) : capacity(capacity), size(0)
+    {
+        tab = new int[capacity];
+    }
+
+    ~DynamicStack() { delete[] tab; }
+
+   // ...
+};
+
+int main()
+{
+    DynamicStack s(5); // alokacja bufora w konstruktorze
+    // ...
+    return 0;
+} // automatyczne wywołanie destruktora i dealokacja bufora!
+```
+Source: [dynamicstack.cpp](dynamicstack.cpp)
+
+To potężny mechanizm. Koniec z wyciekami pamięci i innych zasobów. Nie musimy już pamiętać o ręczny wywołaniu `free()`
+w każdej ścieżce, w tym w dziesięciu różnych miejscach, w których wychodzimy w związku z błędem. Destruktor zawsze 
+zostanie wywołany!
+
+Powiązanie czasu życia zasobów z czasem życia obiektów nosi nazwę idiomu RAII (_Resource Acquisition Is Initialization_).
+Należy go stosować jak najczęściej. Sam [Bjarne Stroustrup](https://en.wikipedia.org/wiki/Bjarne_Stroustrup) mówi, że konstruktory i destruktory w powiązaniu 
+z automatycznym czasem życia obiektu to najistotniejszy mechanizm języka C++.
