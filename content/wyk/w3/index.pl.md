@@ -13,13 +13,11 @@ Zakres:
 * przeładowywanie funkcji, argumenty domyślne
 * konstruktory i destruktory
 * RAII
-* konstruktory kopiujące i operatory przypisania
-* konstruktory przenoszące i operatory przeniesienia
-* reguła 3-ch, reguła 5-ciu
-* ~~przeciążanie operatorów~~
-* ~~konwersje~~
-* ~~literały zdefiniowane przez użytkownika~~
-* ~~składowe statyczne~~
+* kopiowanie obiektów
+* przenoszenie obiektów
+* reguła 5/0
+* nagłówek `<memory>` i sprytne wskaźniki
+* składowe statyczne
 
 ## Programowanie Obiektowe
 
@@ -1091,3 +1089,294 @@ zostanie wywołany!
 Powiązanie czasu życia zasobów z czasem życia obiektów nosi nazwę idiomu RAII (_Resource Acquisition Is Initialization_).
 Należy go stosować jak najczęściej. Sam [Bjarne Stroustrup](https://en.wikipedia.org/wiki/Bjarne_Stroustrup) mówi, że konstruktory i destruktory w powiązaniu 
 z automatycznym czasem życia obiektu to najistotniejszy mechanizm języka C++.
+
+## Kopiowanie obiektów
+
+Obiekty, bez względu na typ, zwykle da się kopiować. Nie jest trudno wyobrazić sobie kopię typów prostych. Kopiowanie abstrakcyjnych, złożonych w środku obiektów
+też jest możliwe do zamodelowania, np.: kopia stosu, kopia tekstu (string'a), kopia grafu, itp.
+
+Kopie powstają w dwóch **różnych** sytuacjach:
+1) Utworzenie nowego obiektu typu `T` z inicjalizatorem tego samego typu.
+
+```cpp
+class T { ... };
+T b;
+T a = b;
+```
+
+2) Przypisanie do istniejącego obiektu typu `T` innego obiektu tego samego typu.
+
+```cpp
+class T { ... };
+T b;
+T a;
+a = b;
+```
+
+### Konstruktory kopiujące
+
+W pierwszej sytuacji tworzymy nowy obiekt, więc kompilator używa konstruktora.
+Konstruktorem kopiującym jest jednoargumentowy konstruktor klasy `T`, przyjmujący referencję na typ `T` (`(const/volatile) T&`), np.:
+
+```cpp
+DynamicStack(const DynamicStack& other)
+    : capacity(other.capacity),
+      size(other.size)
+{
+    tab = new int[capacity];
+    for (int i = 0; i < size; ++i) {
+        tab[i] = other.tab[i];
+    }
+}
+```
+Source: [dynamicstack_copy.cpp](dynamicstack_copy.cpp)
+
+```
+DynamicStack s(5);
+
+s.push(1);
+s.push(2);
+s.push(3);
+
+DynamicStack s2(s);  // kopia
+DynamicStack s3 = s; // druga kopia
+```
+
+Jeżeli programista nie dostarczy swojego, to kompilator, o ile może, generuje niejawny konstruktor kopiujący.
+Taki konstruktor kopiuje pole po polu. W przypadku klasy `DynamicStack` taki konstruktor _zawłaszczy sobie_ wkaźnik
+na dane stosu. Jest więc niepoprawny!
+
+### Operatory przypisania
+
+W drugiej sytuacji obiekt docelowy, do którego kopiujemy, już istnieje. Kompilator nie może więc użyć konstruktora.
+Wywoływany jest **operator przypisania**.
+
+C++ pozwala na przeładowywanie operatorów, w tym operatora przypisania `=`. W zależności od typu argumentów
+(stron operatora) w czasie kompilacji wybrana będzie odpowiednia implementacja. W ogólności o operatorach
+będziemy mówić na następnych wykładach. Tu zajmiemy się tylko przypisaniem.
+
+Operator przypisania `=` ma 2 parametry: lewą i prawą stronę przypisania:
+
+```cpp
+DynamicStack s3; // początkowo pusty stos 
+s3 = s;          // nadpisanie stosu innym stosem (operatorem przypisania)
+    
+const DynamicStack empty;  // Utworzenie stałej: pustego stosu
+s3 = empty;                // wyczyszczenie stosu s3 (operatorem przypisania)
+```
+
+Operator definiujemy składnią podobną do funkcji, z tym że jej nazwą jest `operator=`. `operator` to słowo kluczowe.
+Prawa strona przypisania to argument operatora.
+Lewa strona przypisania to obiekt wskazywany przez `this`.
+Kompilator na podstawie typu lewej strony wybiera, z jakiej klasy ma użyć operatora.
+
+```cpp
+DynamicStack& operator=(const DynamicStack& other)
+{
+    if (this == &other) return *this;  // ochrona przed samoprzypisaniem
+    if (capacity != other.capacity)    // musimy re-alokować tylko jeżeli prawa strona ma inną pojemność
+    {
+        delete[] tab;
+        tab = new int[other.capacity];
+        capacity = other.capacity;
+    }
+    size = other.size;                 // przepisanie rozmiaru ...
+    for (int i = 0; i < size; ++i) {
+        tab[i] = other.tab[i];         // ... i danych z prawej strony
+    }
+    return *this;
+}
+```
+Source: [dynamicstack_copy.cpp](dynamicstack_copy.cpp)
+
+Praktycznie każda implementacja operatora przypisania rozpoczyna się instrukcją warunkową chroniącą przed
+przypisaniem typu `a = a;`.
+
+> Można zauważyć, ze w tym przykładzie pole `capacity` straciło modyfikator `const`. To konieczne, jeżeli
+obiekt ma wspierać przypisanie. Inaczej nie dałoby się zmienić wartości `capacity` przez cały czas życia obiektu!
+
+Operator może zwracać (nie musi). Zwrócona wartość jest wynikiem wyrażenia `(a = b)`.
+Typowo operatory przypisania zwracają referencję na `*this` aby umożliwić przypisania łańcuchowe:
+
+```cpp
+s1 = s2 = s3 = empty;
+// s1 = (s2 = (s3 = empty));
+```
+
+W takim ciągu nastąpi:
+* przypisanie `empty` do `s3`, co zwróci referencję na obiekt `s3`.
+* przypisanie `s3` do `s2`, co zwróci referencję na obiekt `s2`
+* przypisanie `s2` do `s1` zwracając referencję na `s1` (nieużywaną).
+
+## Przenoszenie obiektów
+
+Czasami wiadomo, że obiekt, z którego kopiujemy, umrze zaraz po jego skopiowaniu.
+Dzieje się tak na przykład, gdy:
+1) zwracamy lokalny obiekt przez wartość z funkcji
+```cpp
+std::vector<int> get_v();
+
+int main() {
+  std::vector<int> values;
+  values = get_v(); // skopiowanie obiektu zwróconego z funkcji do zmiennej values 
+}
+
+std::vector<int> get_v() {
+  std::vector<int> v = {1, 2, 3};
+  return v; // zwrócenie obiektu, wiadomo że natychmiast potem zmienna v będzie niszczona
+}
+```
+
+2) Kopiujemy obiekt tymczasowy
+```cpp
+int main() {
+  std::vector<int> values = std::vector<int>{1, 2, 3};
+  values = std::vector<int>{4, 5};
+}
+```
+
+W takich sytuacjach kopiowanie jest nadmiarowe i nieoptymalne w przypadku klas zarządzających dynamicznymi zasobami. 
+Można by przecież _przejąć_ zasoby z prawej strony przypisania, które i tak zaraz zostaną zwolnione.
+
+Konstruktory kopiujące i operatory przeniesienia przyjmują jako argumenty referencje.
+Nie wiadomo czy te referencje odnoszą się do obiektów, które jeszcze pożyją czy też do takich, które zaraz umrą.
+Dlatego C++11 wprowadził nowy typ referencji: `T&&` czyli referencje na r-wartości (wartości tymczasowe).
+
+Tak jak zwykłe referencje, `T&&` muszą być zainicjalizowane w momencie tworzenia. W przeciwieństwie do `T&`
+mogą być zainicjalizowane **tylko** wartościami tymczasowymi.
+
+```cpp
+void foo(int& rx) {}
+
+void goo(int&& rrx) {}
+
+int get() { return 3; }
+
+int main() {
+    int x = 0;  // l-wartość
+
+    int& r1 = x;
+    // int& r2 = get();  //! zwykła referencja inicjalizowana wartością tymczasową
+    // int& r3 = 3;      //! zwykła referencja inicjalizowana wartością tymczasową
+
+    // int&& rr1 = x;    //! referencja na r-wartość inicjalizowana l-wartością
+    int&& rr2 = get();
+    int&& rr3 = 3;
+
+    foo(x);
+    // foo(get());       //! zwykła referencja inicjalizowana wartością tymczasową
+    // foo(3);           //! zwykła referencja inicjalizowana wartością tymczasową
+
+    // goo(x);           //! referencja na r-wartość inicjalizowana l-wartością
+    goo(get());
+    goo(3);
+
+    return 0;
+}
+```
+
+Mając ten fantastyczny mechanizm języka, możemy dodatkowo przeładować konstruktor kopiujący i operator `=`.
+Wersje przyjmujące `T&&` będą używane tylko, jeżeli po prawej stronie będzie wartość tymczasowa, której zasoby można 
+wykorzystać!
+
+### Konstruktory przenoszące
+
+Konstruktorem przenoszącym jest jednoargumentowy konstruktor klasy `T`, przyjmujący `T&&` jako parametr, np.:
+
+```cpp
+DynamicStack(DynamicStack&& other)
+    : capacity(other.capacity),
+      size(other.size),
+      tab(other.tab)
+{
+    other.capacity = 0;
+    other.size = 0;
+    other.tab = nullptr;
+}
+```
+Source: [dynamicstack_move.cpp](dynamicstack_move.cpp)
+
+Będzie wywoływany w momencie, kiedy tworzymy nowy obiekt inicjalizując go obiektem tymczasowym tej samej klasy. 
+
+Konstruktor przenoszący, _kradnąc zasoby_, musi pozostawić obiekt źródłowy w poprawnym stanie. 
+Ten, niedługo zostanie zniszczony. Jego destruktor będzie oczekiwał obiektu w poprawnym stanie.
+Dla klas wspierających przenoszenie trzeba rozważyć, jak będzie wyglądał ten poprawny, przeniesiony stan.
+Stąd warunek w destruktorze:
+
+```cpp
+~DynamicStack()
+{
+    if (tab) delete[] tab;
+}
+```
+
+### Operatory przeniesienia
+
+W sytuacji, kiedy do już istniejącego obiektu przypisujemy wartość tymczasową wykonany zostanie **operator przeniesienia**.
+Wygląda podobnie do operatora przypisania, jedyna różnica to typ referencji:
+
+```cpp
+DynamicStack& operator=(DynamicStack&& other)
+{
+    if (this == &other) return *this;
+    delete[] tab;
+    capacity = other.capacity;
+    size = other.size;
+    tab = other.tab;
+    other.capacity = 0;
+    other.size = 0;
+    other.tab = nullptr;
+    return *this;
+}
+```
+Source: [dynamicstack_move.cpp](dynamicstack_move.cpp)
+
+Operator przeniesienia też musi pozostawić obiekt źródłowy w poprawnym, przeniesionym stanie.
+
+W przeciwieństwie do konstruktora przenoszącego w momencie wywołania tego operatora obiekt docelowy istnieje.
+Trzeba go posprzątać, stąd dealokacja tablicy na początku funkcji.
+
+> _Samoprzeniesienie_, przed którym bronimy się w pierwszej linii operatora przenoszącego,
+> jest możliwe za pomocą wyrażenia `x = std::move(x)`.
+
+### Funkcja `std::move`
+
+Czasami wygodnie jest jawnie przenieść obiekt będący l-wartością do innej zmiennej, nowej lub już istniejącej. 
+Można do tego wykorzystać funkcję biblioteczną `std::move`:
+
+```cpp
+T source = make_T();
+T other = std::move(source); // konstruktor przenosi source do nowego obiektu other
+T another;
+another = std::move(other);  // operator przenosi other do another
+```
+
+Ta funkcja to nic innego jak wykwintne rzutowanie argumentu typu `T&` na typ `T&&`. W dużym uproszczeniu:
+
+```cpp
+T&& move(T& val) {
+  return static_cast<T&&>(t);
+}
+```
+
+[//]: # (### TODO Copy/move elision)
+
+## Reguła 5/0
+
+Mówiąc o klasach, które zarządzają zasobami, tak jak np. `DynamicStack` warto wspomnieć o bardzo użytecznej regule, 
+znanej jako _rule of 5/0_:
+
+> Jeżeli musisz jawnie zdefiniować (lub usunąć) destruktor, konstruktor kopiujący, operator przypisania, 
+> konstruktor przenoszący lub operator przeniesienia
+> to prawdopodobnie musisz zdefiniować (lub usunąć) wszystkie 5 funkcji.
+
+Czyli albo definiujemy wszystko, albo nic. Często zdarza się, że rozpatrzymy i zaimplementujemy zwalnianie zasobów
+w destruktorze, ale nie pomyślimy, czy domyślne kopiowanie lub przeniesienie jest poprawne. Ta zasada pomaga.
+
+Przed C++11, kiedy nie było jeszcze pojęcia _przeniesienia obiektu_, zasada była okrojona do _reguły 3/0_.
+
+## Nagłówek `<memory>` i sprytne wskaźniki
+
+## Składowe statyczne
+
+

@@ -6,4 +6,14 @@ weight: 50
 
 # Wykład 5 - STL
 
-lambdas, szablony, STL, <memory>, iteratory, algosy STL
+* lambdas,
+* szablony
+* STL
+* iteratory
+* algorytmy STL
+* ranged for loop
+* ranges?
+* przeciążanie operatorów
+* konwersje
+* konstruktory konwertujące
+* literały zdefiniowane przez użytkownika
