@@ -25,7 +25,7 @@ Zakres:
 * operatory `new`/`new[]`/`delete`/`delete[]`
 * address sanitizer (ASan)
 
-### Obiekty
+## Obiekty
 
 Programy w C++ manipulują [obiektami](https://en.cppreference.com/w/cpp/language/object).
 Cechy obiektów:
@@ -115,16 +115,16 @@ Jeżeli 2 żyjące obiekty nie są zagnieżdżone, to muszą zajmować
 rozłączne obszary pamięci i mieć unikalne adresy. Porównanie adresów
 jest wtedy właściwą metodą sprawdzenia _czy to ten sam obiekt_.
 
-### Typy postawowe
+## Typy postawowe
 
 C++ zawiera szereg wbudowanych [typów podstawowych](https://en.cppreference.com/w/cpp/language/types).
 
-#### void
+### void
 
 Typ pusty. Nie ma obiektów typu `void`. Używany jako typ zwracany w procedurach i
 do konstrukcji wskaźników `void*`.
 
-#### bool
+### bool
 
 Typ mogący przechowywać jedną z dwóch wartości `true` lub `false`.
 Wyrażenia logiczne są typu `bool`.
@@ -160,7 +160,7 @@ bool c = true;
 int d = static_cast<int>(c); // 1
 ```
 
-#### Typy całkowitoliczbowe
+### Typy całkowitoliczbowe
 
 C++, tak jak C, dostarcza szereg typów całkowitoliczbowych, nie specyfikując dokładnie,
 jakiej mają być szerokości bitowej. Narzuca jedynie minima.
@@ -224,7 +224,7 @@ int c = a + b; // error!
 std::cout << "a + b = " << c << std::endl; // ???
 ```
 
-#### Typy znakowe
+### Typy znakowe
 
 Obecnie C++ dostarcza następujące typy całkowitoliczbowe
 przeznaczone do przechowywania znaków:
@@ -275,12 +275,12 @@ int main() {
 )";
 ```
 
-#### Typy zmiennoprzecinkowe
+### Typy zmiennoprzecinkowe
 
 Standard dostarcza 3 typy: `float`, `double`, `long double`, różniące się precyzją.
 Typowo reprezentowane zgodnie ze standardem IEEE-754 słowami długości 32-bit, 64-bit, 80-bit.
 
-#### std::nullptr_t
+### std::nullptr_t
 
 Typ pustego wskaźnika `nullptr`. Wprowadzony dla lepszej kontroli typów.
 
@@ -298,7 +298,7 @@ func(NULL);
 
 Wartości typu `nullptr_t` są konwertowalne na dowolny inny typ wskaźnikowy.
 
-#### Wskaźniki
+## Wskaźniki
 
 Wskaźniki przechowują adresy obiektów, pośrednio wskazują na inny obiekt.
 Typ wskaźnika zawsze mówi o typie obiektu wskazywanego.
@@ -329,7 +329,7 @@ Point* pp = nullptr;
 pp->x = 0; // !
 ```
 
-### Referencje
+## Referencje
 
 Referencje to również pośrednie odwołania do obiektów.
 W przeciwieństwie do wskaźników muszą być zainicjalizowane w momencie tworzenia. Nie istnieje _null-referencja_.
@@ -377,7 +377,7 @@ int main() {
 }
 ```
 
-### Enumeracje
+## Enumeracje
 
 C++ wspiera enumeracje, podobnie do C:
 
@@ -427,7 +427,7 @@ switch(r)
 }
 ```
 
-### Struktury i klasy
+## Struktury i klasy
 
 Struktury i klasy to typy, których obiekty zawierają serię podobiektów, różnych typów.
 
@@ -464,7 +464,7 @@ S s = {'a', 3};
 S copy = s;
 ```
 
-### Tablice
+## Tablice
 
 Tablice to obiekty typu `T[n]` składające się z `n` następujących po sobie
 podobiektów typu `T`. Mają stały rozmiar `n` wynikający z ich typu, niezmienny
@@ -539,7 +539,7 @@ std::array<int, 3> ay;
 ay = ax;
 ```
 
-### Własności `const` i `volatile`
+## Własności `const` i `volatile`
 
 Każdy typ może być dodakowo kwalifikowany słowami kluczowymi `const` i/lub `volatile`.
 
@@ -600,7 +600,7 @@ std::size_t s = str.size(); // ok! .size() nie modyfikuje
 // str.append(" world"); //! modyfikacja obiektu const
 ```
 
-### Rzutowania
+## Rzutowania
 
 C++ ma 4 operatory rzutowania: `static_cast`, `const_cast`, `reinterpret_cast`, `dynamic_cast`
 
@@ -652,7 +652,7 @@ int* i = reinterpret_cast<int*>(&f);
 *i = 3; //! błąd - tam nie ma int'a
 ```
 
-### Reprezentacja obiektów
+## Reprezentacja obiektów
 
 Obiekty są reprezentowane w pamięci jako ciąg bajtów. Typ `unsigned char` ma bardzo ważne zastosowanie:
 można z jego pomocą analizować reprezentację wszystkich obiektów w pamięci:
@@ -732,7 +732,7 @@ Source: [https://godbolt.org/z/ToeK7dM5Y](https://godbolt.org/z/ToeK7dM5Y)
 Więcej na ten temat można znaleźć
 w [bardzo dobrym artykule](https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8).
 
-### Dynamiczna alokacja pamięci
+## Dynamiczna alokacja pamięci
 
 Język C++ wprowadza jawne operatory `new`/`new[]`/`delete`/`delete[]` do tworzenia i usuwania obiektów alokowanych
 dynamicznie. Znane z C funkcje `std::malloc`/`std::free` są dostępne, ale ich użycie jest nietypowe w programach C++.
@@ -784,7 +784,7 @@ Operator `delete` też jest silnie typowany. Jest wywoływany na wskaźniku, typ
 Podobnie, `delete[]` wpierw niszczy interacyjnie wszystkie elementy tablicy,
 a potem dealokuje jej pamięć.
 
-#### Błędy alokacji
+### Błędy alokacji
 
 Pamięci zawsze może zabraknąć. `new` i `new[]` raportują błędy za pomocą wyjątków.
 Jeżeli alokacja się nie powiedzie operator `new` _rzuca_ wyjątek:
@@ -833,13 +833,13 @@ if (tab == nullptr) {
 }
 ```
 
-### Trwałość pamięci obiektów
+## Trwałość pamięci obiektów
 
 Obiekty potrzebują miejsca w pamięci. To miejsce ma swój określony czas życia. C++ klasyfikuje 4 typy trwałości pamięci
 obiektów:
 automatyczna, dynamiczna, statyczna i związana z wątkiem (`thread_local`).
 
-#### Obiekty automatyczne
+### Obiekty automatyczne
 
 Obiekty zadeklarowane w zakresie bloku `{ ... }`, np. w ciele funkcji lub niżej, są automatycznie alokowane
 przy wejściu kontroli do bloku i dealokowane przy wyjściu z bloku.
@@ -867,7 +867,7 @@ zadeklarowanych w bloku. W momencie wyjścia generuje instrukcje odwrotne.
 
 ![stack.gif](stack.gif)
 
-#### Obiekty dynamiczne
+### Obiekty dynamiczne
 
 Pamięć na obiekty alokowane dynamiczne musi być jawnie pozyskana i zwolniona za pomocą operatorów `new`,`delete`, lub
 funkcji bibliotecznych takich jak `malloc`/`free`. Nie jest zarządzana i zwalniana automatycznie, programista
@@ -883,7 +883,7 @@ wskaźniki na następny/poprzedni blok itp.
 
 ![heap.gif](heap.gif)
 
-#### Obiekty statyczne
+### Obiekty statyczne
 
 Pamięć obiektów statycznych alokowana jest na początku programu i zwalniana na końcu.
 Dotyczy to wszystkich obiektów deklarowanych w zakresie przestrzeni nazw, jak i zmiennych blokowych
@@ -904,12 +904,12 @@ W powyższym przykładzie pamięć na wszystkie 3 obiekty: `x`, `text` i `counte
 Fizycznie takie zmienne są lokowane w dedykowanym segmencie pamięci statycznej. Dzieje się to w momencie ładowania
 programu do pamięci operacyjnej.
 
-#### Obiekty `thread_local`
+### Obiekty `thread_local`
 
 Podobnie do obiektów statycznych, obiekty `thread_local` są alokowane z początkiem życia wątku i zwalniane z jego
 końcem. O wątkach będziemy rozmawiać na późniejszym wykładzie.
 
-### Czas życia obiektów
+## Czas życia obiektów
 
 Każdy obiekt ma **czas życia** w trakcie wykonania programu.
 To jest inna cecha niż trwałość (czas życia) jego pamięci.
@@ -953,7 +953,7 @@ void reuse() {
 
 > Dostęp do obiektu poza czasem jego życia jest błędem!
 
-### Typowe błędy
+## Typowe błędy
 
 Bezpośredni dostęp do pamięci daje ogromne możliwości, ale i otwiera drogę do licznych, trudnych do wychwycenia okiem
 błędów:
@@ -1090,7 +1090,7 @@ Wszystkie powyższe programy są niepoprawne, ale najgorsze błędy to takie, kt
 ujawniają się natychmiastowo. Program (błędny) może tak funkcjonować miesiącami
 w produkcyjnym środowisku.
 
-### Address Sanitizer
+## Address Sanitizer
 
 Z pomocą przychodzą nowoczesne narzędzia. Postawowym, bez którego ciężko obecnie
 wyobrazić sobie pracę nad większym projektem w C++ jest Address Sanitizer (ASan)

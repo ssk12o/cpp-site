@@ -20,7 +20,7 @@ Zakres:
 * algorytm linkera
 * moduły
 
-### Język C++
+## Język C++
 
 Język autorstwa duńskiego informatka [Bjarne Stroustrup'a](https://en.wikipedia.org/wiki/Bjarne_Stroustrup).
 Rozpoczął prace jeszcze w roku 1979 mając na celu stworzenie _"C z klasami"_.
@@ -63,7 +63,7 @@ C++ to **nie jest** rozszerzenie języka C. To zupełnie inne, samodzielne, posi
 rozwijaną specyfikację narzędzie. W pewnym podstawowym zakresie jest do języka C podobny,
 z czego będziemy bogato korzystać.
 
-### Hello World
+## Hello World
 
 Zacznijmy od najprostszego programu w C++ zaimplementowanego w jednym pliku `hello.cpp`:
 
@@ -165,11 +165,11 @@ To konstrukcja analogiczna do `printf("Hello World!")"`z języka C. Zamiast funk
 wypisywania na standardowe wejście używamy operatora `<<` zdefiniowanego w bibliotece standardowej dla klasy obiektu
 `std::cout`.
 
-### Podstawowe narzędzia
+## Podstawowe narzędzia
 
 Aby rozpocząć pisanie prostych programów, warto poznać kilka użytecznych narzędzi typowych dla C++.
 
-#### Standardowe strumienie I/O
+### Standardowe strumienie I/O
 
 Nagłówek [\<iostream\>](https://en.cppreference.com/w/cpp/header/iostream) dostarcza globalne zmienne reprezentujące
 strumienie wejścia/wyjścia: `std::cout`, `std::cin`, `std::cerr`, `std::clog`. Biblioteka C zachowywała się podobnie,
@@ -197,7 +197,7 @@ char txt[10];
 std::cin >> x >> y >> txt;
 ```
 
-#### Typ std::string
+### Typ `std::string`
 
 Nagłówek [\<string\>](https://en.cppreference.com/w/cpp/header/string) dostarcza typ `std::string`. To kontener
 biblioteki standardowej przechowujący ciągłą, dynamiczną tablicę znaków,
@@ -221,7 +221,7 @@ if (txt == "first") {
 std::cin >> txt;
 ```
 
-#### Typ std::vector
+### Typ `std::vector`
 
 Najważniejszy kontener biblioteki standardowej to `vector<T>`, czyli dynamiczna, ciągła tablica obiektów określonego
 typu.
@@ -256,7 +256,7 @@ Przykładowo `vec.push_back(5)` wywołuje metodę `push_back` na rzecz obiektu `
 `5`.
 `vec.size()` zwróci rozmiar wektora `vec`.
 
-### Trajektoria kompilacji
+## Trajektoria kompilacji
 
 Program w języku C++ jest budowany z wielu tekstowych plików wejściowych - tzw. **jednostek translacji**.
 
@@ -445,7 +445,7 @@ g++ main.o helper.o -o prog.exe
 ./prog.exe
 ```
 
-### Makefile
+## Makefile
 
 Zamiast wydawać polecenia budowania ręcznie w większych projektach
 potrzebny jest _system budowania_. Dzięki niemu programiści chcący zbudować oprogramowanie
@@ -495,7 +495,7 @@ Uruchamiamy poleceniem:
 make
 ```
 
-### Elementy programu
+## Elementy programu
 
 Program w C++ składa się z różnych [elementów](https://en.cppreference.com/w/cpp/language/basic_concepts) (_ang.
 entities_):
@@ -653,7 +653,7 @@ Source: [classodr2.cpp](classodr2.cpp)
 g++ classodr1.cpp classodr2.cpp -o classodr.exe && ./classodr.exe
 ```
 
-### Przestrzenie nazw
+## Przestrzenie nazw
 
 C++ daje możliwość umieszczania definicji i deklaracji w przestrzeniach nazw.
 Przestrzenie nazw grupują te dwa elementy celem lepszej ogranizacji i czytelności kodu
@@ -757,7 +757,7 @@ int main() {
 Jeżeli jednostka translacji często korzysta z symboli z jakiejś przestrzeni nazw to może zadeklarować jej domyślne
 przeszukiwanie korzystając ze składni `using namespace ns;`.
 
-### Tryb linkowania
+## Tryb linkowania
 
 Jednostki translacji mogą korzystać z elementów programu definiowanych w innych jednostkach translacji.
 To podstawowy mechanizm, dzięki któremu możliwa jest jakakolwiek komunikacja pomiędzy niezależnie budowanymi plikami.
@@ -793,7 +793,7 @@ Reguły stosowane do określenia, jaki tryb linkowania ma nazwa, są zawiłe. Za
 
 Nalepiej zrozumieć to na powszechnie występujących przykładach.
 
-#### Tryb zewnętrzny
+### Tryb zewnętrzny
 
 Symbole linkowane zewnętrznie są widoczne z innych jednostek.
 
@@ -816,7 +816,7 @@ namespace foo {
 }
 ```
 
-#### Tryb wewnętrzny
+### Tryb wewnętrzny
 
 Elementy o linkowaniu wewnętrznym są niejako prywatne dla jednostki translacji.
 Wiele jednostek może definiować tę samą nazwę, bo odnoszą się one do innych instancji.
@@ -849,7 +849,7 @@ Ciekawy detal różniący języki C i C++:
 > Stałe w zakresie globalnej przestrzeni nazw C++ (zakresie pliku w C) mają linkowanie zewnętrzne w C,
 > a wewnętrzne w C++.
 
-### Pliki nagłówkowe
+## Pliki nagłówkowe
 
 Pliki nagłówkowe są starym, sprawdzonym i odchodzącym powoli do lamusa sposobem na deduplikację
 deklaracji i definicji pomiędzy jednostkami translacji. Chcąc korzystać w całym programie
@@ -921,7 +921,7 @@ Historycznie słowo `inline` było podpowiedzią dla optymalizatora, sugerując�
 w miejsca wywołania. Kompilatory stosowały tę optymalizację, bez względu na to, czy funkcja była `inline`
 czy nie. Dlatego C++ mógł wykorzystać to słowo kluczowe w innym celu.
 
-### Biblioteki
+## Biblioteki
 
 Modularyzacja na poziomie jednostek translacji jest w przypadku większych projektów
 niewystarczająca. Często w miarę wzrostu złożoności programiści wydzielają całe
@@ -943,7 +943,7 @@ graph TD
     L1[external_library.a / .so] -->|Linker| EXE
 ```
 
-#### Biblioteki statyczne
+### Biblioteki statyczne
 
 Podstawowym typem biblioteki jest tzw. _biblioteka statyczna_, czyli archiwum zawierające kilka
 skompilowanych plików obiektowych. Tworzymy ją za pomocą archiwizatora, zwykle `ar`:
@@ -1015,7 +1015,7 @@ Istotne jest, że linker nie włącza do programu domyślnie wszystkich obiektó
 Włącza wyłącznie obiekty, które mają odniesienia w samym programie! Nieużywane funkcje i zmienne
 w zbudowanym pliku wykonalnym nie istnieją!
 
-##### Kolejność linkowania
+#### Kolejność linkowania
 
 Biblioteki mogą zależeć od innych bibliotek.
 Przy pracy z dużymi projektami składającymi się z wielu zależności istotne staje się
@@ -1131,7 +1131,7 @@ g++ main.o -L. -lA -lB -lA -lB -o my.exe
 
 Więcej szczegółów w [artykule](https://eli.thegreenplace.net/2013/07/09/library-order-in-static-linking).
 
-#### Biblioteki dynamiczne
+### Biblioteki dynamiczne
 
 Biblioteki statyczne są bezpośrednio włączane w plik wynikowy, co skutkuje jego powiększeniem.
 Biblioteki potrafią być ogromne (w GB!). Dołączanie ich osobno do każdego pliku wykonywalnego
@@ -1180,7 +1180,7 @@ Biblioteka standardowa jest duża i zwykle kompilator linkuje ją dynamicznie.
 Nasze programy uruchamiają się tylko dlatego, że gdzieś w systemie obecny jest plik `.so`
 zawierający skompilowane funkcje z przestrzeni nazw `std::`.
 
-### Moduły
+## Moduły
 
 > Ten rozdział jest w ramach ciekawostki, praktyka dla chętnych
 
