@@ -1208,6 +1208,11 @@ W takim ciągu nastąpi:
 * przypisanie `s3` do `s2`, co zwróci referencję na obiekt `s2`
 * przypisanie `s2` do `s1` zwracając referencję na `s1` (nieużywaną).
 
+Podobnie jak przy konstruktorze, jeżeli programista nie dostarczy swojego, to kompilator, o ile może, 
+generuje niejawny operator przypisania. Taki operator kopiuje pole po polu. 
+Ponownie, w przypadku klasy `DynamicStack`, taki operator _zawłaszczy sobie_ wkaźnik na dane stosu
+i jest niepoprawny!
+
 ## Przenoszenie obiektów
 
 Czasami wiadomo, że obiekt, z którego kopiujemy, umrze zaraz po jego skopiowaniu.
@@ -1312,8 +1317,9 @@ Stąd warunek w destruktorze:
 
 ### Operatory przeniesienia
 
-W sytuacji, kiedy do już istniejącego obiektu przypisujemy wartość tymczasową wykonany zostanie **operator przeniesienia**.
-Wygląda podobnie do operatora przypisania, jedyna różnica to typ referencji:
+W sytuacji, kiedy do już istniejącego obiektu przypisujemy wartość tymczasową, 
+wykonany zostanie **operator przeniesienia**. Wygląda podobnie do operatora przypisania, 
+jedyna różnica to typ referencji:
 
 ```cpp
 DynamicStack& operator=(DynamicStack&& other)
@@ -1359,7 +1365,63 @@ T&& move(T& val) {
 }
 ```
 
-[//]: # (### TODO Copy/move elision)
+## Konstruktory i operatory generowane niejawnie
+
+Dla prostych klas niedefiniujących żadnych z powyższych funkcji specjalnych kompilator sam je wygeneruje.
+
+```cpp
+class M { ... };
+
+class A {
+  M m;
+public:
+  A() {}
+}
+
+int main()
+{
+    A a, b;
+
+    A copy = a;
+    A moved = std::move(a);
+
+    copy = b;
+    moved = std::move(b);
+
+    return 0;
+}
+```
+
+Taką klasę można naturalnie kopiować i przenosić. Niejawnie wygenerowane konstruktory i operatory kopiują
+lub przenoszą pole po polu.
+
+Można jawnie wymuszać generowanie lub niegenerowanie tych szczególnych metod, 
+korzystając ze składni `= default` lub `= delete`:
+
+```cpp
+class A {
+  M m;
+public:
+  A() = default; 
+  ~A() = default;
+  
+  A(const A& other) = delete;
+  A(A&& other) = default;
+   
+  A& operator=(const A& other) = delete;
+  A& operator=(A&& other) = default;
+}
+```
+
+Obiekty takiej klasa będą przenoszalne, ale niekopiowalne!
+
+Zdefiniowanie lub usunięcie jednej z tych składowych wpływa na generację reszty przez kompilator.
+
+1) jawny destruktor, konstruktor kopiujący lub operator przypisania blokuje generację konstruktora i operatora przenoszącego
+2) jawny konstruktor lub operator przenoszący blokuje generację konstruktora kopiującego i operatora przypisania
+
+Efekty częściowego zdefiniowania mogą być bardzo nieoczywiste. 
+Warto pobawić się przykładem: [implicit_members.cpp](implicit_members.cpp) selektywnie dodając funkcje.
 
 ## Reguła 5/0
 
@@ -1373,10 +1435,113 @@ znanej jako _rule of 5/0_:
 Czyli albo definiujemy wszystko, albo nic. Często zdarza się, że rozpatrzymy i zaimplementujemy zwalnianie zasobów
 w destruktorze, ale nie pomyślimy, czy domyślne kopiowanie lub przeniesienie jest poprawne. Ta zasada pomaga.
 
-Przed C++11, kiedy nie było jeszcze pojęcia _przeniesienia obiektu_, zasada była okrojona do _reguły 3/0_.
+Dla obiektów niewspierających operacji przeniesienia, zasada może być okrojona do _reguły 3/0_.
+
+[//]: # (### TODO Copy/move elision)
 
 ## Nagłówek `<memory>` i sprytne wskaźniki
 
+Zarządzanie dynamicznie alokowanym obiektem lub tablicą obiektów jest niezwykle powszechne.
+Do tego, jak widzieliśmy na poprzednim wykładzie, ręczne operowanie wskaźnikami jest podatne na błędy.
+Łatwo dwukrotnie zwolnić obiekt lub go nie zwolnić.
+
+Dzięki semantyce przenoszenia biblioteka standardowa mogła dostarczyć typy, zachowujące się jak wskaźniki,
+które zarządzają czasem życia obiektu automatycznie.
+
+### `std::unique_ptr`
+
+Pierwszy, najważniejszy typ to unikalny wskaźnik `std::unique_ptr`, który zwlania obiekt wskazywany
+podczas swojej destrukcji. Ginie wskaźnik = ginie bufor. Nie trzeba ręcznie go zwalniać.
+
+```cpp
+{
+  std::unique_ptr<int> ptr = std::make_unique<int>(3);
+  std::unique_ptr<int[]> tab = std::make_unique<int[]>(10);
+  
+  *ptr = 3;
+  for (int i = 0; i < 10; ++i) tab[i] = i;
+  
+  // ...
+} // desturkcja ptr i tab zwalnia obiekty ze sterty
+```
+
+Elementem typu wskaźnika jest typ wskazywanego obiektu. Podobnie jak w przypadku `std::vector<T>` trzeba go podać.
+`std::make_unique` jest funkcją pomocniczą, która alokuje obiekt, przyjmując parametry do jego inicjalizacji
+jako argumenty i zwraca, opakowując go w sprytny wskaźnik.
+
+Tak samo, jak w przypadku zwykłych wskaźników obiekt typu `std::unique_ptr<T>` może mieć wartość `nullptr`.
+Jest to też wartość domyślna nowo utworzonego wskaźnika.
+Przypisanie do niego `nullptr` zwolni wskazywany obiekt.
+
+```cpp
+std::unique_ptr<int> ptr;       // nullptr
+ptr = std::make_unique<int>(3); // alokacja
+ptr = nullptr;                  // zwolnienie
+```
+
+Obiekty typu `std::unique_ptr<T>` są **niekopiowalne**. Dzięki temu nie ma możliwości podwójnego zwolnienia bufora.
+Możne je natomiast naturalnie przenosić, a dzięki temu przekazywać do funkcji i zwracać (bez kopii).
+
+```cpp
+// std::unique_ptr<int> p2 = ptr; //!
+std::unique_ptr<int> p2 = std::move(ptr);
+```
+
+Mówimy, że wskaźnik unikalny jest odpowiedzialny za czas życia obiektu (jest jego właścicielem).
+Jeżeli chcemy gdzieś przesłać wskazywany obiekt, bez przeniesienia tej odpowiedzialności
+wystarczy przekazać surowy wskaźnik `T*` lub referencję `T&`.
+
+### `std::shared_ptr`
+
+W niektórych programach ciężko określić, który moduł jest odpowiedzialny za czas życia danego obiektu dynamicznego
+i wygodnie byłoby mieć kilku właścicieli. Kto ma wtedy zwolnić obiekt? Ostatni żyjący właściciel.
+
+Do tego służy drugi biblioteczny typ wskaźnika: `std::shared_ptr`. Wskaźniki tego typu można kopiować.
+Wewnętrznie, `std::shared_ptr` zlicza instancje pokazujące na dany bufor. Na kopii inkrementuje licznik,
+na destrukcji, wyzerowaniu itp.: dekrementuje. Obiekt zostanie zwolniony wraz ze śmiercią ostatniej
+instancji wskaźnika (licznik = 0).
+
+```cpp
+class Point
+{
+    float x, y;
+public:
+    Point(float a, float b) : x{a}, y{b} {}
+};
+
+int main()
+{
+    std::shared_ptr<Point> ptr = std::make_shared<Point>(1.0, 2.0);  // counter = 1, alokacja
+    std::shared_ptr<Point> ptr2 = ptr;                               // counter = 2
+    ptr = nullptr;                                                   // counter = 1
+    return 0;
+}                                                                    // counter = 0, dealokacja
+```
+
+Source: [shared_ptr.cpp](shared_ptr.cpp)
+
 ## Składowe statyczne
 
+Klasa może posiadać pola i metody statyczne, oznaczone słowem kluczowym `static`.
+Takie pola i metody nie są związane z konkretnym obiektem. Są jedynie widoczne w przestrzeni `NazwaKlasy::`.
+Pola statyczne to tak naprawdę zmienne globalne, których użycia trzeba prefixować nazwą klasy.
+Metody statyczne to zwykłe funkcje, których wywołania trzeba poprzedzać nazwą klasy.
 
+```cpp
+class Entry {
+ static int count; // deklaracja
+public:
+ static int getCount() { return count; }
+
+ Entry() { ++count; }
+
+ ~Entry() { --count; }
+};
+
+int Entry::count = 0; // definicja
+```
+Source: [static_members.cpp](static_members.cpp)
+
+Powyższa klasa zlicza swoje instancje w zmiennej globalnej `int Entry::count`.
+Definicja pól statycznych zawsze musi być umieszczona poza klasą. Najczęściej w pliku `*.cpp` zawierającym
+implementację danej klasy.
