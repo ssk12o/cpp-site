@@ -37,8 +37,8 @@ Harmonogram spotkań dostępny jest w sekcji [Harmonogram]({{< ref "harmonogram"
 
 ## Ankieta
 
-Przedmiot w nowej odsłonie wymaga walidacji. Zachęcamy do wypełnienia ankiety
-po każdym temacie: https://forms.gle/n353yLxaYVHEbNfVA. Odpowiedzi posłużą do dostosowania
+Przedmiot w nowej odsłonie wymaga walidacji. Zachęcamy do wypełnienia [ankiety](https://forms.gle/n353yLxaYVHEbNfVA)
+po każdym temacie. Odpowiedzi posłużą do dostosowania
 treści omawianych na przedmiocie.
 
 ## Materiały

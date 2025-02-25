@@ -31,8 +31,7 @@ Komitet ISO trzyma się od tego czasu 3-letniego cyklu w którym regularnie
 publikowany jest nowy standard języka - C++11, C++14, C++17, C++20, C++23 (obecny).
 Grupa regularnie publikuje postępy: https://isocpp.org/std/status.
 
-C++ nadal jest jednym z **najpopularniejszych** języków, trzymając się 2-3 pozycji w indeksie TIOBE:
-https://www.tiobe.com/tiobe-index/cplusplus/.
+C++ nadal jest jednym z **najpopularniejszych** języków, trzymając się 2-3 pozycji w [indeksie TIOBE](https://www.tiobe.com/tiobe-index/cplusplus/).
 Znajduje bardzo szerokie zastosowanie, zwłaszcza w projektach wymagających najwyższej wydajności.
 
 Ten język jest **wszechobecny**. Ciężko znaleźć platformę sprzętową, na której nie dałoby się go wykorzystać (podobnie
