@@ -15,7 +15,7 @@ int main()
 
     std::cout << "sizeof(c) = " << sizeof(c) << ", alignof(char) = " << alignof(char) << ", &c = " << (void*)&c << '\n';
     std::cout << "sizeof(x) = " << sizeof(x) << ", alignof(int) = " << alignof(int) << ", &x = " << &x << '\n';
-    std::cout << "sizeof(vec) = " << sizeof(x) << ", alignof(vector<int>) = " << alignof(int) << ", &vec = " << &vec <<'\n';
+    std::cout << "sizeof(vec) = " << sizeof(vec) << ", alignof(vec) = " << alignof(vec) << ", &vec = " << &vec <<'\n';
 
     Point p = {1, 2};
 
