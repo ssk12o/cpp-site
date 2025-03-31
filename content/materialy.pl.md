@@ -12,6 +12,8 @@ title: "Materiały"
    Stroustrup, B. (2018). _A tour of C++_ (2nd ed.). Addison-Wesley.
 3. **Opus magnum C++. Programowanie w języku C++.**
    Grębosz, J. (2019). _Opus magnum C++. Programowanie w języku C++_ (Wydanie III poprawione). Wydawnictwo Helion.
+4. **Professional CMake: A Practical Guide**  
+   Craig, S. (2018). https://crascit.com/professional-cmake/
 
 ### Artykuły
 

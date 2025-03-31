@@ -1,0 +1,3 @@
+<a href="{{ .Site.Params.BookRepo }}/tree/master{{ strings.TrimPrefix hugo.WorkingDir .Page.File.Filename | path.Dir }}/{{ .Get 0 }}" target="_blank">
+    {{ .Get 1 | default "View on GitHub" }}
+</a>

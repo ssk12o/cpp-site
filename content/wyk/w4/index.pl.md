@@ -12,7 +12,6 @@ Zakres:
 * Budowanie:
   * build types
   * cmake
-  * ninja
 * Debugging:
   * gdb
   * coredumps
@@ -780,12 +779,384 @@ git checkout development
 Czyli robi dokładnie to co fetch i następnie łączy lokalną gałąź z jej zdalnym odpowiednikiem
 potencjalnie tworząc merge commit.
 
+
 ## Rodzaje kompilacji
 
-Ten sam kod źródłowy C++ może być zbudowany na wiele różnych sposobów.
-Kompilatory posiadają wiele opcji kontrolujących proces budowania,
-wpływających na właściwości wygenerowanego kodu maszynowego.
+
+
+## Systemy Budowania
+
+C++ nie ma wystandaryzowanego systemu budowania. Różne platformy dostarczają swoje narzędzia:
+* GNU Make (Linux)
+* MinGW Make (Windows + MinGW)
+* NMake (Windows + VisalStudio)
+* Ninja
+* Visual Studio Solutions
+* XCode projects
+
+Do tej pory wykorzystywaliśmy GNU Make.
+
+Projekty wieloplatformowe, których kod jest rozwijany, np. dla platform Windows i Linux
+potrzebują systemu budowania opisującego projekt w sposób niezależny od platformy.
+Środowisko programistów stworzyła kilka takich narzędzi, np.:
+* [CMake](https://cmake.org/)
+* [Bazel](https://bazel.build/)
+* [Meson](https://mesonbuild.com/)
+* [Buck2](https://buck2.build/)
+
+Każde z nich to zupełnie inne narzędzie wymagające nauki.
+
+Spośród wszystkich wymienionych, CMake można uznać za de-facto standard w zakresie systemu budowania dla języka C++.
+Ma ogromny (> 50%) udział w rynku. Rozpoczynając pracę w projekcie pisanym w C++ lub tworząc nowy, istnieje duża szansa,
+że to właśnie CMake będzie systemem budowania.
 
 ## CMake
+
+[CMake](https://cmake.org/) to tzw. meta system budowania (_meta build system_). To narzędzie, które na podstawie skryptowego opisu projektu
+generuje właściwy system budowania, odpowiedni dla platformy (np. Unix Makefiles), na którą w danej chwili budujemy oprogramowanie.
+Ten sam opis może posłużyć do generacji innego systemu budowania, budując projekt w odmiennym środowisku (np. VS Solutions).
+
+CMake to zwykły program, który trzeba zainstalować, najlepiej przy pomocy menadżera pakietów.
+Narzędzie `cmake` odczytuje konfigurację z gównego katalogu projektu, tzw. **source directory** 
+i generuje właściwy system budowania w innym katalogu, tzw. **build directory**, często zagnieżdżonym w źródłach.
+Istnieje też możliwość wygenerowania systemu budowania w tym samym katalogu, co źródła, czyli tzw. _in-source-build_.
+To odradzana opcja ze względu na zaśmiecanie katalogu źródłowego plikami tymczasowymi.
+
+Projekt jest opisywany za pomocą tekstowych skryptów konfiguracyjnych `CMakeLists.txt`. Uruchomienie `cmake`
+zawsze przebiega przez następujące po sobie fazy: **configure**, **generate**. Potem zwykle następuje uruchomienie
+wygenerowanego systemu budowania, czyli tzw. faza **build**.
+
+Minimalny projekt składa się z pliku [main.cpp](cmake/intro/main.cpp) i opisu [CMakeLists.txt](cmake/intro/CMakeLists.txt):
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(intro VERSION 1.0.0)
+
+add_executable(main main.cpp)
+```
+
+Język opisu projektu to język skryptowy. `cmake` interpretuje i wykonuje treść pliku `CMakeLists.txt` linijka po linijce
+tak jak powłoka. Narzędzie ma kilka podstawowych sposobów wywołania:
+
+```shell
+cmake [<options>] <path-to-source-dir> # Wygeneruj system budowania w katalogu roboczym (cwd)
+cmake [<options>] <path-to-build-dir>  # Re-generuj system budowania obecny we wskazanym katalogu
+cmake [<options>] -S <path-to-source-dir> -B <path-to-build-dir> # Jawnie wskazane katalogi źródłowe i docelowe
+```
+
+```shell
+rm -Rf build && mkdir build && cd build
+cmake ../cmake/intro
+```
+
+```shell
+rm -Rf build
+cmake -S cmake/intro -B build
+```
+
+Powyższe wywołania robią to samo: generują buildsystem w katalogu `build` dla projektu w katalogu `cmake/intro`.
+Warto zwrócić uwagę na wyjście generowane przez program:
+
+```
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /cpp-site/content/wyk/w4/build
+```
+
+Narzędzie wykonało mnóstwo pracy niejawnie:
+* odnalazło w systemie kompilator dla języków C i C++ (`gcc` i `g++`).
+* sprawdziło, czy kompilatory działają poprawnie (budując mały program generowany w locie)
+* przetestowało kompilatory pod względem wspieranych funkcjonalności i interfejsu
+* wygenerowało buildsystem w katalogu `build`
+
+To wszystko efekt wykonania funkcji `project()`.
+
+### Configure
+
+W pierwszym kroku `cmake` odczytuje i wykonuje plik `CMakeLists.txt` z katalogu źródłowego.
+Wykonując instrukcje w nim zawarte generuje plik `CMakeCache.txt` w katalogu wyjściowym wypełniając
+go tzw. **cache variables**. Są zmienne tekstowe, pary klucz-wartość, których wartości są zachowywane
+pomiędzy następującymi po sobie wywołaniami `cmake`. Dzięki zapamiętywaniu re-generacja jest znacznie szybsza.
+Przykładowe informacje cache'owane w zmiennych to:
+* wykryty kompilator i inne narzędzia do budowania
+* rodzaj kompilacji, flagi kompilatora
+* opcje specyficzne dla projektu
+
+Wyjście z ponownego uruchomienia jest znacznie krótsze:
+
+```shell
+cmake -S cmake/intro -B build
+```
+```
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to:/cpp-site/content/wyk/w4/build
+```
+
+Zawartość cache zwykle nie zmienia się pomiędzy wywołaniami, choć czasami może być to przydatne (np. zmiana rodzaju kompilacji).
+Użytkownik ma możliwość edycji wartości zmiennych w `CMakeCache.txt`. Może to zrobić ręcznie, przy użyciu `cmakegui`
+lub z poziomu linii zlecenia za pomocą opcji `-D <var>:<type>=<value>`:
+
+```shell
+cmake -DCMAKE_BUILD_TYPE:STRING=Release build # Zapisz wartość CMAKE_BUILD_TYPE przed re-konfiguracją
+```
+
+### Generate
+
+Po zakończeniu wykonania skryptu `CMakeLists.txt` narzędzie natychmiast wykonuje drugi krok: generację natywnego buildsystemu.
+O tym, jaki buildsystem zostatnie wygenerowany (makefile, ninja, VS Solutions, etc.) decyduje wartość zmiennej
+`CMAKE_GENERATOR` w `CMakeCache.txt`.
+
+Ten krok jest w większości całkowicie automatyczny. Skrypty, które pisze użytkownik są w całości wykonywane wcześniej.
+Istnieje pewna klasa wyrażeń, tzw. [generator expressions](https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html),
+których ewaluacja jest opóźniana aż do kroku generacji.
+
+### Build
+
+Po wygenerowaniu systemu budowania można w końcu go uruchomić i zbudować nasz projekt.
+Znając jego rodzaj, można to zrobić ręcznie, np.:
+
+```shell
+cd build
+make
+```
+
+Albo lepiej, skorzystać z tego że CMake potrafi wywołać buildsystem:
+
+```shell
+cmake --build build --target clean
+cmake --build build
+```
+
+Większość generowanych systemów budowania na począku sprawdza, czy czasem opis projektu się nie zmienił (`CMakeLists.txt`).
+Jeśli tak to automatycznie ponownie wykonuje `cmake` przed krokiem build.
+
+![CMake Workflow](https://cgold.readthedocs.io/en/latest/_images/workflow.png)
+
+Żródło: [CGold 0.1 documentation](https://cgold.readthedocs.io/en/latest/tutorials/workflow.html)
+
+Po zmianie czegokolwiek w pliku `CMakeLists.txt` uruchomienie budowania powoduje re-generację:
+
+```shell
+cmake --build build
+# -- Configuring done (0.0s)
+# -- Generating done (0.0s)
+# -- Build files have been written to:/cpp-site/content/wyk/w4/build
+# [ 50%] Building CXX object CMakeFiles/intro.dir/main.cpp.o
+# [100%] Linking CXX executable intro
+# [100%] Built target intro
+```
+
+
+### Struktura projektu
+
+Żródła większych projektów zwykle są podzielone hierarchicznie na podkatalogi reprezentujące różne komponenty systemu.
+Skrypt `CMakeLists.txt` zwykle też jest podzielony na pod-skrypty. Te nie są wykonywane automatycznie,
+interpreter nie przegląda automatycznie podkatalogów. Wymagane jest użycie jawne użycie dyrektywy `add_subdirectory()`.
+`cmake` w jej miejscu wykonuje skrypt `CMakeLists.txt` znaleziony we wskazanym podkatalogu.
+
+Popatrzmy na przykładowy projekt składający się z biblioteki `utils`, pliku wykonywalnego
+`main` korzystającego z tej biblioteki, oraz pliku wykonywalnego `test` zawierającego
+testy dla biblioteki `utils`.
+
+```
+.
+├── CMakeLists.txt
+├── generator
+│   ├── CMakeLists.txt
+│   ├── generator.cpp
+│   └── include
+│       └── generator.hpp
+├── main
+│   ├── CMakeLists.txt
+│   └── main.cpp
+├── person
+│   ├── CMakeLists.txt
+│   └── include
+│       └── person.hpp
+├── test
+│   ├── CMakeLists.txt
+│   └── test.cpp
+└── utils
+    ├── CMakeLists.txt
+    ├── impl.cpp
+    ├── impl.hpp
+    ├── include
+    │   └── utils.hpp
+    └── utils.cpp
+```
+Sources:
+{{< github-link "cmake/libs" >}}
+
+Główny skrypt `CMakeLists.txt` wykonuje skrypty w podkatalogach, gdzie definiowane są
+poszczególne elementy projektu:
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(libs VERSION 1.0.0)
+
+add_subdirectory(utils)
+add_subdirectory(main)
+add_subdirectory(test)
+```
+
+```shell
+rm -Rf build 
+cmake -S cmake/libs -B build
+```
+
+Zwykle każda biblioteka i plik wykonywalny są umieszczane w osobnym katalogu źródłowym
+razem z towarzyszącym opisem.
+
+### Targets
+
+Kluczowym zadaniem skryptów `CMakeLists.txt` jest zadeklarowanie
+budowalnych elementów projektu: bibliotek i plików wykonywalnych.
+Służą ku temu dyrektywy [`add_executable`](https://cmake.org/cmake/help/latest/command/add_executable.html) 
+i [`add_library`](https://cmake.org/cmake/help/latest/command/add_library.html):
+
+```
+add_executable(<name> [source1] [source2 ...])
+```
+```
+add_library(<name> [STATIC | SHARED | MODULE] [<source>...])
+```
+
+Ścieżki do źródeł są podawane względem katalogu, w którym znajduje aktualnie wykonywany plik `CMakeLists.txt`. 
+
+Biblioteki i programy mają różnorodne [**właściwości**](https://devdocs.io/cmake~3.24/manual/cmake-properties.7#properties-on-targets)
+pozwalające sterować procesem ich budowania. Do najważniejszych należą:
+* `INCLUDE_DIRECTORIES` katalogi, w których poszukiwane są pliki nagłówkowe podczas budowania biblioteki/programu 
+* `INTERFACE_INCLUDE_DIRECTORIES`: katalogi, w których poszukiwane są pliki nagłówkowe podczas budowania bibliotek/programów zależnych  
+* `LINK_LIBRARIES`: biblioteki linkowane podczas budowania danej biblioteki/programu
+* `INTERFACE_LINK_LIBRARIES`: biblioteki linkowane podczas budowania bibliotek/programów zależnych 
+* `COMPILE_DEFINITIONS`: makrodefinicje ustawiane podczas budowania danej biblioteki/programu 
+* `INTERFACE_COMPILE_DEFINITIONS`: makrodefinicje ustawiane podczas budowania bibliotek/programów zależnych
+
+Poszczególne właściwości są modyfikowane za pomocą dedykowanych procedur.
+
+#### Include directories
+
+Biblioteki definiują swój interfejs publiczny za pomocą zbioru plików nagłówkowych położonych w pewnym katalogu.
+Konsumenci biblioteki, używający dyrektyw `#include "..."` muszą móc odnajdywać te pliki nagłówkowe.
+Korzystanie ze ścieżek względnych lub bezwzględnych w kodzie źródłowym nie jest dobrym rozwiązaniem.
+Konsumenci biblioteki `libfoo` powinni po prostu pisać `#include "foo.hpp"` bez względu na to,
+gdzie ta biblioteka się fizycznie znajduje. Służą do tego flagi kompilatora takie jak `-I<dir>`
+dodające daną ścieżkę do listy przeszukiwanych katalogów. CMake dostarcza wygodny interfejs to ustawiania tych flag.
+
+```cmake
+add_library(utils utils.cpp impl.cpp)
+target_include_directories(utils PUBLIC include)
+```
+
+Komendy kompilacji plików źródłowych biblioteki `utils` jak i programów, które jej potrzebują
+będą posiadały opcję `-I/cpp-site/content/wyk/w4/cmake/libs/utils/include` pozwalając na poprawne wykonanie
+dyrektywy `#include "utils.hpp"`.
+
+```shell
+cmake --build build -- VERBOSE=1
+# ...
+# [ 25%] Building CXX object utils/CMakeFiles/utils.dir/utils.cpp.o
+# cd /home/saqq/repos/cpp-site/content/wyk/w4/build/utils && 
+# /usr/bin/c++  
+#   -I/home/saqq/repos/cpp-site/content/wyk/w4/cmake/libs/utils/include  
+#   -MD -MT utils/CMakeFiles/utils.dir/utils.cpp.o 
+#   -MF CMakeFiles/utils.dir/utils.cpp.o.d 
+#   -o CMakeFiles/utils.dir/utils.cpp.o 
+#   -c /home/saqq/repos/cpp-site/content/wyk/w4/cmake/libs/utils/utils.cpp
+# ...
+```
+
+Pełna składnia dyrektywy wygląda następująco:
+
+```
+target_include_directories(<target> [SYSTEM] [AFTER|BEFORE]
+  <INTERFACE|PUBLIC|PRIVATE> [items1...]
+  [<INTERFACE|PUBLIC|PRIVATE> [items2...] ...])
+```
+
+Każda grupa katalogów (`items...`) jest poprzedzona słowem `PUBLIC`, `PRIVATE` lub `INTERFACE`.
+Te mówią o tym, do których z dwóch własności `*INCLUDE_DIRECTORIES` dopisać ścieżki:
+* `INTERFACE` dodaje wyłącznie do własności `INTERFACE_INCLUDE_DIRECTORIES`
+* `PRIVATE` dodaje wyłącznie do własności `INCLUDE_DIRECTORIES` 
+* `PUBLIC` dodaje jednej i drugiej
+
+Ścieżki we własności `INCLUDE_DIRECTORIES` są uwzględniane wyłącznie podczas kompilacji samej biblioteki.
+Jest to więc prywatny detal implementacyjny biblioteki niewpływający na jej konsumentów.
+
+Ścieżki we własności `INTERFACE_INCLUDE_DIRECTORIES` są uwzględniane podczas kompilacji programów i bibliotek
+zależnych. Populując tę własność biblioteka mówi innym gdzie znajdują się jej nagłówki.
+
+Kiedy zatem używać jakiego trybu? Najlepiej podsumuje to tabela:
+
+| Kto potrzebuje?<br/>ja/konsumenci | Potrzebują | Nie potrzebują |
+|-----------------------------------|------------|----------------|
+| Nie potrzebuję                    |            | `INTERFACE`    |
+| Potrzebuję                        | `PRIVATE`  | `PUBLIC`       |
+
+
+#### Link libraries
+
+Zależności między bibliotekami i programami definiujemy _linukując_ elementy do bibliotek.
+
+```cmake
+add_executable(main main.cpp)
+target_link_libraries(main PRIVATE generator)
+```
+
+W powyższym przykładzie program `main` zależy od biblioteki `generator`.
+* biblioteka `generator` musi być zbudowana jako pierwsza;
+* podczas linkowania programu `main` zostanie włączona biblioteka `generator`;
+* własności `INTERFACE_*` biblioteki `generator`, takie jak `INTERFACE_INCLUDE_DIRECTORIES` będą uwzględnione podczas budowania programu `main`.
+
+Dla naszego projektu graf zależności wygląda następująco:
+
+```mermaid
+graph LR
+    main -.->|PRIVATE| generator
+    generator -.->|PRIVATE| utils
+    generator -->|PUBLIC| person
+    test -.->|PRIVATE| utils
+```
+
+
+Dyrektywa `target_link_libraries()` ma podobną składnię do `target_include_directories()`:
+
+```
+target_link_libraries(<target>
+                      <PRIVATE|PUBLIC|INTERFACE> <item>...
+                     [<PRIVATE|PUBLIC|INTERFACE> <item>...]...)
+```
+
+Znaczenie słów `PRIVATE`, `PUBLIC`, `INTERFACE` jest analogiczne: 
+* `PRIVATE` jeżeli to ja potrzebuję biblioteki, a moi konsumenci nie
+* `PUBLIC` jeżeli zarówno ja, jak i moi konsumenci potrzebują danej biblioteki do budowania
+* `INTERFACE` jeżeli tylko moi konsumenci powinni linkować bibliotekę, ja nie muszę
+
+Słowa te wpływają na to, które z własności `LINK_LIBRARIES` i `INTERFACE_LINK_LIBRARIES` zostaną rozbudowane.
+
+> Biblioteka, która w swoich publicznych nagłówkach zawiera dyrektywy `#include ""` załączająca 
+> nagłówki jej zależności, musi deklarować tę zależność jako PUBLIC!
+
+## Testowanie
+
+
+
+## Debugging
+
+## Profiling
+
 
 
