@@ -781,7 +781,55 @@ potencjalnie tworząc merge commit.
 
 ## Rodzaje kompilacji
 
+Ten sam projekt może zostać zbudowany na wiele różnych sposobów, w zależności od późniejszego wykorzystania
+binariów. Istnieje mnóstwo [przełączników kompilatora](https://gcc.gnu.org/onlinedocs/gcc/Option-Summary.html), sterujących procesem translacji, wypływających na to,
+co zostanie wygenerowane w zawartości pliku wynikowego.
 
+Flaga `-g` zapisuje w pliku wynikowym informacje dla debugera.
+
+Flagi z rodziny `-W`: `-Wall`, `-Wextra`, `-Wpedantic`, `-Wshadow`, `-Wno-shadow`
+włączają i wyłączają różnorodne ostrzeżenia kompilatora.
+
+Flagi z rodziny `-O`: `-O0`, `-O1`, `-O2`, `-O3`, `-Os`, `-Ofast`, `-Og`, `-Oz`
+sterują poziomem optymalizacji. Kolejne poziomy 0, 1, 2, 3 
+dodają coraz więcej przyśpieszeń, wydłużając proces kompilacji
+i przyśpieszając generowany kod.
+
+Flagi z rodziny `-fsanitize=` załączają różnorodne opcje instrumentacji
+programu, ułatwiając wczesne wykrywanie błędów, spowalniając jego wykonanie.
+
+Programiści zwykle wprowadzają kilka różnych typów kompilacji
+różniących się zestawami flag. Minimalnie wyróżnia się
+typ `Debug` i `Release`. Pierwszy jest używany przez programistów 
+podczas rozwoju oprogramowania. Drugi używany jest do budowy oprogramowania dostarczanego odbiorcom.
+Przykładowe zestawy flag:
+
+* `Debug`: `-g -Wall -O0 -fsanitize=address,undefined`
+* `Release`: `-O3 -DNDEBUG`
+
+```shell
+g++ -g -Wall -O0 -fsanitize=address,undefined sum.cpp -o sum.debug
+g++ -O3 -DNDEBUG -o sum.release sum.cpp -o sum.release
+ll -h
+# -rw-rw-r-- 1 user user  700 kwi  6 16:41 sum.cpp
+# -rwxrwxr-x 1 user user 168K kwi  6 16:42 sum.debug*
+# -rwxrwxr-x 1 user user  17K kwi  6 16:42 sum.release*
+time ./sum.debug
+# debug: 887459712 (6060576us)
+# 
+# real    0m6,082s
+# user    0m5,880s
+# sys     0m0,204s
+time ./sum.release
+# release: 887459712 (261209us)
+# 
+# real    0m0,277s
+# user    0m0,098s
+# sys     0m0,181s
+```
+Source: [sum.cpp](sum.cpp)
+
+Dobry system budowania dostarcza wsparcie dla różnych, nazwanych typów kompilacji.
 
 ## Systemy Budowania
 
@@ -1172,6 +1220,7 @@ g++ gdb/main.cpp -o main.out && ll -h main.out
 g++ -g gdb/main.cpp -o main.out && ll -h main.out
 file main.out
 ```
+Source: [main.cpp](gdb/main.cpp)
 
 Symbole można wydzielić do osobnego pliku za pomocą narzędzia `objcopy`:
 
@@ -1317,6 +1366,7 @@ g++ -g gdb/core.cpp -o core.out
 ./core.out hi my friend
 # Segmentation fault (core dumped)
 ```
+Source: [core.cpp](gdb/core.cpp)
 
 Program zakończył się z błędem. Otrzymaliśmy komunikat _Segmentation fault (core dumped)_ - co to oznacza?
 Segmentation fault to typ błędu, program dokonał niepoprawnego odwołania do pamięci
@@ -1405,6 +1455,61 @@ Przydatne podczas diagnostyki mogą być tutaj polecenia:
 Widzimy, że crash nastąpił w momencie wykonania funkcji `size()` obiektu typu `std::string`.
 Wywołanie tej metody pochodzi z instrukcji `head->text != text` z wartością `head = 0x0`. Czyli typowy
 _null pointer dereference_.
+
+## Sanitizers
+
+Poza znanym już _Address Sanitizerem_ kompilatory dostarczają inne narzędzia wykrywające
+inne klasy błędów. Nie wszystkie można ze sobą łączyć.
+
+### Leak Sanitizer (LSan)
+
+LSan wykrywa wycieki pamięci, monitorując wszystkie alokacje i dealokacje.
+
+```shell
+g++ -g -fsanitize=leak lsan.cpp -o lsan.out
+./lsan.out
+# =================================================================
+# ==41099==ERROR: LeakSanitizer: detected memory leaks
+# 
+# Direct leak of 3 byte(s) in 3 object(s) allocated from:
+#     #0 0x7b7705616222 in operator new(unsigned long) ../../../../src/libsanitizer/lsan/lsan_interceptors.cpp:248
+#     #1 0x5ded302fa1f9 in main /home/saqq/repos/cpp-site/content/wyk/w4/lsan.cpp:12
+#     #2 0x7b7704e2a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+#     #3 0x7b7704e2a28a in __libc_start_main_impl ../csu/libc-start.c:360
+#     #4 0x5ded302fa0e4 in _start (/home/saqq/repos/cpp-site/content/wyk/w4/lsan.out+0x10e4) (BuildId: c391bc698ad8a7fa4075a0046f4f1e37d4770943)
+# 
+# SUMMARY: LeakSanitizer: 3 byte(s) leaked in 3 allocation(s).
+```
+Source: [lsan.cpp](lsan.cpp)
+
+### Undefined Behavior Sanitizer (UBSan)
+
+UBsan wykrywa [liczne, różnorodne błędy](https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html#index-fsanitize_003dundefined)
+t.j. dereferencje niepoprawnych wskaźników, dzielenie przez 0, przepełnienia podczas rzutowań i innych operacji arytmetycznych.
+Dodaje sprawdzenia przez każdą instrukcją mogącą wywołać niezdefiniowane zachowanie.
+
+```shell
+g++ -g -fsanitize=undefined ubsan.cpp -o ubsan.out
+./ubsan.out
+# ubsan.cpp:5:7: runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type 'int'
+```
+Source: [ubsan.cpp](ubsan.cpp)
+
+### Stack Protector
+
+Opcja `-fstack-protector` włącza mechanizm chroniący przed przepełnieniami stosu.
+Kompilator umieszcza dodatkową wartość na stosie, za wszystkimi zmiennymi lokalnymi
+i dodaje sprawdzenia jej wartości przy wyjściu z funkcji. Kończy program, jeżeli wykryje
+jej nadpisanie.
+
+```shell
+g++ -g -fstack-protector stack-protector.cpp -o stack-protector.out
+./stack-protector.out
+# 2 + 3 = 5
+./stack-protector.out
+# 2 asdfasdfasdf 4
+# *** stack smashing detected ***: terminated
+```
 
 ## Testowanie
 

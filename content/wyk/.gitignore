@@ -7,4 +7,5 @@
 *.pcm
 *.out
 *.debug
+*.release
 *.core
