@@ -16,12 +16,11 @@ Zakres:
   * gdb
   * coredumps
   * sanitizers
-  * protectors
-  * valgrind
-  * profiling
+* Testowanie
+* Profiling
 * Zarządzanie zależnościami:
   * conan
-  * vcpkg 
+  * vcpkg
 
 ## Git
 
@@ -43,11 +42,11 @@ Takie polecenie utworzy w pustym katalogu roboczym puste repozytorium: niezawier
 żadnych zapisanych wersji.
 
 ```
--rw-rw-r-- 1 saqq saqq   92 mar 22 10:11 config        # Lokalna konfiguracja repozytorium
--rw-rw-r-- 1 saqq saqq   73 mar 22 10:11 description   # Czytelny opis repozytorium
--rw-rw-r-- 1 saqq saqq   23 mar 22 10:11 HEAD          # Wskazanie na "bieżący" commit
-drwxrwxr-x 4 saqq saqq 4096 mar 22 10:11 objects       # Przechowywane obiekty: commity, stany plików, stany katalogów
-drwxrwxr-x 4 saqq saqq 4096 mar 22 10:11 refs          # Referencje, czyli nazwy dla commitów
+-rw-rw-r-- 1 user user   92 mar 22 10:11 config        # Lokalna konfiguracja repozytorium
+-rw-rw-r-- 1 user user   73 mar 22 10:11 description   # Czytelny opis repozytorium
+-rw-rw-r-- 1 user user   23 mar 22 10:11 HEAD          # Wskazanie na "bieżący" commit
+drwxrwxr-x 4 user user 4096 mar 22 10:11 objects       # Przechowywane obiekty: commity, stany plików, stany katalogów
+drwxrwxr-x 4 user user 4096 mar 22 10:11 refs          # Referencje, czyli nazwy dla commitów
 ```
 
 Katalog roboczy razem z `.git` można dowolnie przenosić i kopiować, `.git` nie zawiera żadnych absolutnych ścieżek.
@@ -1069,13 +1068,13 @@ dyrektywy `#include "utils.hpp"`.
 cmake --build build -- VERBOSE=1
 # ...
 # [ 25%] Building CXX object utils/CMakeFiles/utils.dir/utils.cpp.o
-# cd /home/saqq/repos/cpp-site/content/wyk/w4/build/utils && 
+# cd /cpp-site/content/wyk/w4/build/utils && 
 # /usr/bin/c++  
-#   -I/home/saqq/repos/cpp-site/content/wyk/w4/cmake/libs/utils/include  
+#   -I/cpp-site/content/wyk/w4/cmake/libs/utils/include  
 #   -MD -MT utils/CMakeFiles/utils.dir/utils.cpp.o 
 #   -MF CMakeFiles/utils.dir/utils.cpp.o.d 
 #   -o CMakeFiles/utils.dir/utils.cpp.o 
-#   -c /home/saqq/repos/cpp-site/content/wyk/w4/cmake/libs/utils/utils.cpp
+#   -c /cpp-site/content/wyk/w4/cmake/libs/utils/utils.cpp
 # ...
 ```
 
@@ -1150,11 +1149,264 @@ Słowa te wpływają na to, które z własności `LINK_LIBRARIES` i `INTERFACE_L
 > Biblioteka, która w swoich publicznych nagłówkach zawiera dyrektywy `#include ""` załączająca 
 > nagłówki jej zależności, musi deklarować tę zależność jako PUBLIC!
 
+## GDB
+
+Podstawowym narzędziem do diagnozowania błędów w oprogramowaniu podczas jego tworzenia (i nie tylko) jest **debugger**.
+To program, który pozwala kontrolować wykonanie innego programu, poruszać się po instrukcjach
+krokowo lub skokowo w trakcie jego wykonania, podglądać i interaktywnie modyfikować stan programu, zmiennych, pamięci.
+
+`gdb` jest takim właśnie debuggerem. Dostarcza potężny interfejs tekstowy, wymagający nauki do uzyskania biegłości,
+ale praktycznie każde środowisko programistyczne da się z nim zintegrować, udostępniając interfejs graficzny.
+
+### Symbole debugera
+
+Debugger zwykle potrzebuje do pracy dodatkowych informacji opisujących wykonywany kod binarny. To tzw. symbole debugera
+opisujące zmienne, funkcje, konkretne linijki kodu, pozwalą tłumaczyć adres wykonywanej instrukcji lub adres zmiennej
+na ich umiejscowienie w kodzie źródłowym. Bez tych informacji wyjście debugera będzie nieczytelne. 
+
+Kompilator generuje te informacje w procesie translacji i może je opcjonalnie umieścić w pliku wynikowym.
+Przykładowo, w `gcc` i `clang` służy do tego przełącznik `-g`. Niektóre kompilatory umieszczają symbole w osobnym pliku.
+
+```shell
+g++ gdb/main.cpp -o main.out && ll -h main.out
+g++ -g gdb/main.cpp -o main.out && ll -h main.out
+file main.out
+```
+
+Symbole można wydzielić do osobnego pliku za pomocą narzędzia `objcopy`:
+
+```shell
+objcopy --only-keep-debug main.out main.debug
+strip -g main.out
+file main.out
+```
+
+### Uruchamianie
+
+Skompilowany plik wykonywalny można uruchomić pod nadzorem `gdb`
+przekazując ścieżkę do pliku binarnego:
+
+```shell
+gdb ./main.out
+# Reading symbols from ./main.out...
+```
+
+Nie przekazujemy tutaj argumentów programu. Nasz program jeszcze się nie wykonuje!
+`gdb` interpretuje polecenia wprowadzane na standardowe wejście sterujące
+procesem debugowania. Pierwszym poleceniem będzie `run`: uruchom program.
+
+```
+(gdb) run
+Starting program: /cpp-site/content/wyk/w4/main.out
+Filling list with dummy data ...
+-1 0 1 2 2 3 
+-1 0 1 3 
+[Inferior 1 (process 14134) exited normally]
+```
+
+Program wykonał się i zakończył poprawnie.
+
+Do polecenia `run` można przekazać argumenty programu:
+
+```
+(gdb) run 1 2 3
+Starting program: /cpp-site/content/wyk/w4/main.out 1 2 3
+Reading list from argv[]
+1 2 3 
+1 3 
+[Inferior 1 (process 14247) exited normally]
+```
+
+Plik wykonywalny można też wskazać już po uruchomieniu `gdb`:
+
+```shell
+gdb
+(gdb) file ./main.out
+Reading symbols from ./main.out...
+```
+
+Można też podłączyć `gdb` do działającego procesu znając jego numer.
+
+```shell
+gdb ./main.out 14247
+```
+
+### Breakpoints
+
+Domyślnie program wykonuje się bez zatrzymania aż do końca
+(lub błędu). Chcąc obserwować zachowanie programu krok po kroku trzeba
+wstrzymać jego wykonanie. Służy do tego tzw.
+breakpoint, czyli oznaczone miejsce w programie, po którego osiągnięciu
+
+Breakpointy definiujemy poleceniem `break` podając nazwę funkcji, 
+numer linii w kodzie lub nawet adres pojedynczej instrukcji.
+
+```
+(gdb) break main.cpp:87
+(gdb) break SortedLinkedList::remove
+(gdb) info break
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep y   0x00005555555565a6 in main(int, char**) at gdb/main.cpp:87
+2       breakpoint     keep y   0x0000555555556971 in SortedLinkedList::remove(int) at gdb/main.cpp:48
+(gdb) run
+Breakpoint 1, main (argc=1, argv=0x7fffffffdb18) at gdb/main.cpp:87
+87          list.print();
+```
+
+Wykonanie programu zostało wstrzymane **przed** wejściem do metody `list.print()`.
+
+Polecenia `where` i `list` pokażą obecne miejsce w programie:
+
+```
+(gdb) where
+#0  main (argc=1, argv=0x7fffffffdb18) at gdb/main.cpp:87
+(gdb) list
+82              {
+83                  list.insert(std::stoi(argv[i]));
+84              }
+85          }
+86      
+87          list.print();
+88          list.remove(2);
+89          list.print();
+90          return 0;
+91      }
+```
+
+### Nawigacja
+
+Do sterowania krokowym wykonaniem programu po osiągnięciu breakpointa służą 3 polecenia:
+* `next`: przejdź do następnej linii kodu
+* `step`: przejdź do następnej instrukcji (wchodząc do funkcji)
+* `finish`: wyjdź z obecnej funkcji
+
+Istotna jest różnica między `next` i `step`. `next` przeskoczy przez wszystkie wywołania funkcji, metod, konstruktorów,
+w bieżącej linii. `step` będzie do nich wchodzi po kolei.
+
+Polecenie `continue` wznawia wykonanie programu aż do osiągnięcia następnego breakpointa.
+
+### Pamięć
+
+`gdb` ma dostęp do całej pamięci programu w trakcie wykonania. Może ją odczytywać i modyfikować!
+Po wstrzymaniu wykonywania programu możemy np. wydrukować wartości zmiennych lub je ustawić za pomocą poleceń:
+* `print` ewaluuje wartość wyrażenia i je wyświetla
+* `set variable` ustawia wartość zmiennej
+
+```
+(gdb) break fill
+(gdb) run
+Breakpoint 1.1, fill (list=..., v=std::vector of length 6, capacity 6 = {...}) at gdb/main.cpp:61
+61          for (std::size_t i = 0; i < v.size(); ++i)
+(gdb) next
+63              list.insert(v[i]);
+(gdb) print i
+$6 = 0
+(gdb) set variable i = 100000000
+(gdb) next
+
+Program received signal SIGSEGV, Segmentation fault.
+```
+
+### Coredumps
+
+Czasami interaktywne debugowanie aplikacji nie jest możliwe. Program w momencie wystąpienia błędu
+może być uruchomiony na produkcyjnej maszynie, do której programista nie ma bezpośredniego dostępu.
+
+```shell
+g++ -g gdb/core.cpp -o core.out
+./core.out hi my friend
+# Segmentation fault (core dumped)
+```
+
+Program zakończył się z błędem. Otrzymaliśmy komunikat _Segmentation fault (core dumped)_ - co to oznacza?
+Segmentation fault to typ błędu, program dokonał niepoprawnego odwołania do pamięci
+i został zabity przez system operacyjny. Informacja _core dumped_ oznacza, że system
+przed zamknięciem aplikacji zrzucił stan programu (całą jego pamięć) do pliku
+celem dalszej diagnozy. Taki plik to właśnie **coredump**, który można później załadować
+w debugerze i obejrzeć stan programu w momencie awarii.
+
+Ciężko określić gdzie znaleźć pliki generowane przez system automatycznie w momencie awarii.
+To proces zależny od dystrybucji i konfiguracji systemu. Na niektórych systemach
+domyślne ten proces jest wyłączony. Na niektórych plik zostanie wygenerowany
+w katalogu z programem, na niektórych w jakimś katalogu systemowym.
+Należy to sprawdzić w dokumentacji konkretnego systemu.
+
+Przykładowo, na Ubuntu, po zainstalowaniu pakietu `systemd-coredump` wygląda to tak:
+```shell
+coredumpctl list # wyświetl listę zrzutów
+# TIME                           PID  UID  GID SIG     COREFILE EXE                                               SIZE
+# Sun 2025-04-06 15:51:43 CEST 25667 1000 1000 SIGSEGV present  /cpp-site/content/wyk/w4/core.out 2.4M
+# Sun 2025-04-06 16:10:02 CEST 30119 1000 1000 SIGSEGV present  /cpp-site/content/wyk/w4/core.out 2.4M
+coredumpctl dump --output my.core # zapisz ostatni zrzut do pliku my.core
+ll -h
+# -rw-rw-r-- 1 saqq saqq 6,3M kwi  6 16:11 my.core
+```
+
+Poleceniem `gcore` można również wymusić zrzut pamięci działającego procesu, podając jego
+identyfikator. Uruchamiając program w jednym terminalu:
+
+```shell
+./core.out
+hi
+alex
+```
+
+Odszukajmy jego PID i użyjmy polecenia `gcore`:
+
+```shell
+ps -a
+#  26369 pts/3    00:00:00 core.out
+#  26859 pts/4    00:00:00 ps
+gcore 26369
+0x000073bf4831ba61 in read () from /lib/x86_64-linux-gnu/libc.so.6
+Saved corefile core.26369
+[Inferior 1 (process 26369) detached]
+```
+
+W praktyce polecenie podłącza się za pomocą `gdb` do programu, zatrzymuje jego wykonanie,
+dokonuje zrzutu pamięci i się odłącza.
+
+W efekcie otrzymamy na dysku plik, typowo o nazwie `core.<pid>`:
+
+```shell
+ll -h
+-rw-rw-r-- 1 user user 1,4M kwi  6 15:56 core.26369
+-rwxrwxr-x 1 user user 123K kwi  6 15:51 core.out*
+```
+
+Plik można załadować do `gdb` podając go jako dodatkowy argument lub używając polecenia
+`core-file`:
+
+```shell
+gdb core.out # alternatywnie gdb core.out my.core
+(gdb) core-file my.core
+# Core was generated by `./core.out'.
+# Program terminated with signal SIGSEGV, Segmentation fault.
+# #0  0x00007347b2f68d14 in std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::size() const () from /lib/x86_64-linux-gnu/libstdc++.so.6
+```
+
+Nie można wykonywać dalej takiego programu, można tylko oglądać jego stan w momencie zrzutu.
+Przydatne podczas diagnostyki mogą być tutaj polecenia:
+* `backtrace`: wydruk stosu wywołań
+* `up`/`down`: nawigacja w dół/górę po ramkach stosu
+
+```
+(gdb) bt
+#0  0x00007347b2f68d14 in std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::size() const () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#1  0x0000590a8047a8d1 in std::operator==<char, std::char_traits<char>, std::allocator<char> > (__lhs=<error reading variable: Cannot access memory at address 0x8>, __rhs="hello") at /usr/include/c++/13/bits/basic_string.h:3714
+#2  0x0000590a8047a4b0 in std::operator!=<char, std::char_traits<char>, std::allocator<char> > (__lhs=<error reading variable: Cannot access memory at address 0x8>, __rhs="hello") at /usr/include/c++/13/bits/basic_string.h:3791
+#3  0x0000590a8047994d in find (head=0x0, text="hello") at gdb/core.cpp:58
+#4  0x0000590a80479ab3 in main (argc=1, argv=0x7fff60835058) at gdb/core.cpp:83
+(gdb) up 3
+#3  0x0000590a8047994d in find (head=0x0, text="hello") at gdb/core.cpp:58
+58          while (head->text != text)
+```
+
+Widzimy, że crash nastąpił w momencie wykonania funkcji `size()` obiektu typu `std::string`.
+Wywołanie tej metody pochodzi z instrukcji `head->text != text` z wartością `head = 0x0`. Czyli typowy
+_null pointer dereference_.
+
 ## Testowanie
-
-
-
-## Debugging
 
 ## Profiling
 

@@ -5,3 +5,6 @@
 *.s
 *.exe
 *.pcm
+*.out
+*.debug
+*.core
