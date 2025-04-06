@@ -10,17 +10,14 @@ Zakres:
 
 * Git
 * Budowanie:
-  * build types
-  * cmake
+    * build types
+    * cmake
 * Debugging:
-  * gdb
-  * coredumps
-  * sanitizers
+    * gdb
+    * coredumps
+    * sanitizers
 * Testowanie
-* Profiling
-* Zarządzanie zależnościami:
-  * conan
-  * vcpkg
+* Zarządzanie zależnościami
 
 ## Git
 
@@ -55,8 +52,9 @@ nie dotyka samego katalogu roboczego.
 
 ### Obiekty
 
-Repozytorium składa się z obiektów, przechowywanych w katalogu `.git/objects`. 
+Repozytorium składa się z obiektów, przechowywanych w katalogu `.git/objects`.
 Git definiuje 4 rodzaje obiektów (blob, tree, commit, annotated tag), z czego najistotniejsze są pierwsze 3:
+
 * **blob**: utrwalona zawartość jakiegoś pliku z katalogu roboczego
 * **tree**: utrwalony zawartość katalogu (słownika)
 * **commit**: utrwalony stan katalogu roboczego z dodatkowymi informacjami nt. wersji
@@ -72,7 +70,7 @@ echo Hi! > hi.txt
 git hash-object hi.txt # 663adb09143767984f7be83a91effa47e128c735
 ```
 
-Wyliczony skrót będzie taki sam na każdej maszynie, bo zawartość pliku jest taka sama. 
+Wyliczony skrót będzie taki sam na każdej maszynie, bo zawartość pliku jest taka sama.
 Zmieniając treść, zmienimy skrót.
 
 Plik dodany do repozytorium, np. jako element commit'a zostanie umieszczony w katalogu objects
@@ -89,13 +87,14 @@ git cat-file blob 663ad
 
 Katalog `.git/objects` jest partycjonowany po dwóch pierwszych znakach skrótu.
 Jak widać na powyższym przykładzie, do identyfikacji obiektów
-wystarczy podać kilka pierwszych znaków sumy SHA1. Wystarczy tyle, 
+wystarczy podać kilka pierwszych znaków sumy SHA1. Wystarczy tyle,
 żeby nie było niejednoznaczności.
 
-Utrwalenie stanu pliku nie jest wystarczające do wersjonowania projektu: 
+Utrwalenie stanu pliku nie jest wystarczające do wersjonowania projektu:
 trzeba zapisywać stany całych katalogów. Do tego służy obiekt typu tree.
 
 Za pomocą polecenia git commit utworzyliśmy kilka obiektów:
+
 ```shell
 cd repo
 find .git/objects -type f
@@ -104,11 +103,14 @@ git ls-tree 8da9
 ```
 
 Jeden z nich to właśnie tree. Jego zawartość to listing katalogu, którego stan opisuje.
+
 ```
 100644 blob 663adb09143767984f7be83a91effa47e128c735    hi.txt
 ```
+
 Nasz obiekt zawiera tylko jeden wpis, bo katalog roboczy miał tylko 1 plik w momencie wywołania polecenia `git commit`.
 Obiekt tree listuje elementy katalogu, każdy z nich jest innym obiektem git'a. Dla każdego obiektu zawiera:
+
 * uprawnienia (100644 = rw-r--r--)
 * typ (blob/tree)
 * identyfikator obiektu (SHA1)
@@ -127,7 +129,7 @@ graph TD
     E --> G[Blob\ndb09143]
 ```
 
-Jeżeli katalog zawiera kilka plików o tej samej zawartości, 
+Jeżeli katalog zawiera kilka plików o tej samej zawartości,
 to tree będzie wielokrotnie listował ten sam obiekt.
 
 ```shell
@@ -163,9 +165,10 @@ Copied hi.txt
 ```
 
 Można z niego odczytać:
+
 * identyfikator utrwalonego stan katalogu roboczego (`tree`)
-* identyfikatory poprzednich commitów (`parent`) 
-* autor (`author`) 
+* identyfikatory poprzednich commitów (`parent`)
+* autor (`author`)
 * czas autorstwa (utrwalenia stanu) (`1742665566 +0100`)
 * committer (`commiter`)
 * czas commiterstwa (nałożenia commita) (`1742665566 +0100`)
@@ -213,14 +216,14 @@ Stąd ważny fakt:
 > Branch to nic więcej jak nazwa dla commita!
 
 Branche mogą być modyfikowalne. W momencie tworzenia nowego commita aktywny branch
-jest _przepinany_ na nowy commit. Git wspiera również niemodyfikowalne nazwy dla commitów, 
+jest _przepinany_ na nowy commit. Git wspiera również niemodyfikowalne nazwy dla commitów,
 czyli tzw. tagi.
 
 ### HEAD
 
 A co to jest _aktywny branch_? Repozytorium zawiera specjalną referencję o nazwie `HEAD`
 (w pliku `.git/HEAD`), która pokazuje najnowszy, aktualny commit, na którym pracujemy.
-`HEAD` może pokazywać na commit pośrednio poprzez branch lub bezpośrednio. 
+`HEAD` może pokazywać na commit pośrednio poprzez branch lub bezpośrednio.
 Typową sytuacją jest wskazanie pośrednie:
 
 ```shell
@@ -235,32 +238,29 @@ commita.
 ```mermaid
 graph LR
 %% Definitions by type
-  classDef commitStyle fill:#f9a825,stroke:#333,stroke-width:2px,font-weight:bold;
-  classDef treeStyle fill:#8bc34a,stroke:#333,stroke-width:2px,font-weight:bold;
-  classDef blobStyle fill:#03a9f4,stroke:#333,stroke-width:2px,font-weight:normal;
-  classDef ref fill:#add8e6,stroke:none,color:#000,font-family:monospace,font-size:12px,padding:2px,rx:5px,ry:5px;
+    classDef commitStyle fill: #f9a825, stroke: #333, stroke-width: 2px, font-weight: bold;
+    classDef treeStyle fill: #8bc34a, stroke: #333, stroke-width: 2px, font-weight: bold;
+    classDef blobStyle fill: #03a9f4, stroke: #333, stroke-width: 2px, font-weight: normal;
+    classDef ref fill: #add8e6, stroke: none, color: #000, font-family: monospace, font-size: 12px, padding: 2px, rx: 5px, ry: 5px;
 
 %% Commit Nodes (Left-Aligned)
-  HEAD:::ref
-  master:::ref
-  C0[NULL]:::textOnly
-  C1[Commit 23d9]:::commitStyle
-  C2[Commit a7f3]:::commitStyle
-  C2 -->|parent| C1
-  C1 -->|parent| C0
-  C1 -->|tree| T1
-  C2 -->|tree| T2
-  HEAD --> master
-  master --> C2
-
-  Hi[Blob 663a]:::blobStyle
-  T1[Tree 8da9]:::treeStyle
-  T2[Tree a525]:::treeStyle
-  
-  
-  T1 --> Hi
-  T2 --> Hi
-  T2 --> Hi
+    HEAD:::ref
+    master:::ref
+    C0[NULL]:::textOnly
+    C1[Commit 23d9]:::commitStyle
+    C2[Commit a7f3]:::commitStyle
+    C2 -->|parent| C1
+    C1 -->|parent| C0
+    C1 -->|tree| T1
+    C2 -->|tree| T2
+    HEAD --> master
+    master --> C2
+    Hi[Blob 663a]:::blobStyle
+    T1[Tree 8da9]:::treeStyle
+    T2[Tree a525]:::treeStyle
+    T1 --> Hi
+    T2 --> Hi
+    T2 --> Hi
 ```
 
 Do manipulacji `HEAD`'em służy operacja `git checkout`, która oczekuje jako argumentu jakiegoś
@@ -278,22 +278,22 @@ starych rewizji.
 ```mermaid
 graph LR
 %% Definitions by type
-  classDef commitStyle fill:#f9a825,stroke:#333,stroke-width:2px,font-weight:bold;
-  classDef treeStyle fill:#8bc34a,stroke:#333,stroke-width:2px,font-weight:bold;
-  classDef blobStyle fill:#03a9f4,stroke:#333,stroke-width:2px,font-weight:normal;
-  classDef ref fill:#add8e6,stroke:none,color:#000,font-family:monospace,font-size:12px,padding:2px,rx:5px,ry:5px;
+    classDef commitStyle fill: #f9a825, stroke: #333, stroke-width: 2px, font-weight: bold;
+    classDef treeStyle fill: #8bc34a, stroke: #333, stroke-width: 2px, font-weight: bold;
+    classDef blobStyle fill: #03a9f4, stroke: #333, stroke-width: 2px, font-weight: normal;
+    classDef ref fill: #add8e6, stroke: none, color: #000, font-family: monospace, font-size: 12px, padding: 2px, rx: 5px, ry: 5px;
 
 %% Commit Nodes (Left-Aligned)
-  HEAD:::ref
-  master:::ref
-  C0[NULL]:::textOnly
-  C1[Commit 23d9]:::commitStyle
-  C2[Commit a7f3]:::commitStyle
-  C2 -->|parent| C1
-  C1 -->|parent| C0
-  HEAD --> C1
-  master --> C2
-  
+    HEAD:::ref
+    master:::ref
+    C0[NULL]:::textOnly
+    C1[Commit 23d9]:::commitStyle
+    C2[Commit a7f3]:::commitStyle
+    C2 -->|parent| C1
+    C1 -->|parent| C0
+    HEAD --> C1
+    master --> C2
+
 ```
 
 Commit wskazywany przez `HEAD` staje się automatycznie rodzicem nowo tworzonych rewizji.
@@ -316,22 +316,24 @@ git cat-file commit eef0
 ```
 
 Dodatkowo podczas takiej operacji aktywny branch jest przesuwany na nowy commit.
-W przypadku detached HEAD nie ma aktywnego brancha, więc nie jest to naturalny stan 
+W przypadku detached HEAD nie ma aktywnego brancha, więc nie jest to naturalny stan
 do tworzenia nowych commitów.
 
 ### Index
 
 Przed wyprodukowaniem commita zwykle wydajemy polecenie `git add` - po co?
 Istnieją 3 niezależne stany katalogu roboczego, które biorą udział w procesie tworzenia commita:
+
 * Sam katalog roboczy z bieżącym stanem plików
 * `HEAD` - względem niego wypracowywujemy zmianę (będzie rodzicem)
 * Indeks - stan pośredni, do którego selektywnie dodajemy zmiany przed utworzeniem commita
 
-Pozwala to na selektywne wypracowywanie treści następnego commita. Możemy, np. mieć 
+Pozwala to na selektywne wypracowywanie treści następnego commita. Możemy, np. mieć
 jakieś prywatne, brudne zmiany w części plików, których nie chcemy uwzględniać w nowej rewizji.
 Nie chcemy ich też wycofywać, bo są przydatne.
 
 Indeks technicznie znajduje się wpliku `.git/index`. Można go wydrukować poleceniem `ls-files`:
+
 ```shell
 git ls-files --stage
 # 100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 0       empty.txt
@@ -340,7 +342,7 @@ git ls-files --stage
 ```
 
 Wygląda zaskakująco podobnie do obiektu `tree` bo właśnie nim (prawie) jest!
-W momencie operacji `git commit` to właśnie stan indeksu utrwalany jest w postaci 
+W momencie operacji `git commit` to właśnie stan indeksu utrwalany jest w postaci
 nowego obiektu `tree`, wokół którego powstaje nowy obiekt `commit`.
 
 Operacja `git checkout` przywraca nie tylko stan katalogu roboczego, na taki jak jest zapisany
@@ -428,10 +430,11 @@ git diff
 ```
 
 Wykonując teraz polecenie `git commit`:
+
 * indeks zostanie utrwalony w postaci nowego obiektu `tree`
 * powstanie nowy obiekt `commit`:
-  * wskazujący na nowo powstałe `tree`
-  * obecny `HEAD` wstawiony zostanie do atrybutu `parent`
+    * wskazujący na nowo powstałe `tree`
+    * obecny `HEAD` wstawiony zostanie do atrybutu `parent`
 * gałąź wskazywana przez `HEAD` zostanie przestawiona na nowy commit
 
 Otrzymamy w ten sposób `HEAD = index != workdir`. W katalogu roboczym pozostanie
@@ -455,7 +458,7 @@ git status
 
 Jedna z podstawowych operacji: `git reset`, często powoduje trudności ze względu
 na swoją wielofunkcyjność. Wbrew destrukcyjnie brzmiącej nazwie `reset` w istocie
-przestawia branch na wskazany commit. Dodatkowo potrafi w tym samym momencie zmieniać stan indeksu 
+przestawia branch na wskazany commit. Dodatkowo potrafi w tym samym momencie zmieniać stan indeksu
 i katalogu roboczego na stan z danej rewizji.
 
 `git reset` ma 3 tryby:
@@ -479,6 +482,7 @@ git reset --soft HEAD^
 
 Wróciliśmy tym samym do stanu `HEAD != index != workdir`, niejako odwracając operację `git commit`.
 Commit, mimo że nienazwany ciągle istnieje, możemy do niego wrócić:
+
 ```shell
 git reset --soft 401c
 ```
@@ -515,6 +519,7 @@ Każde repozytorium jest zatem acyklicznym grafem skierowanym, w którym węzła
 a krawędziami wskazania na przodków.
 
 Graf można zwizualizować poleceniem `git log`:
+
 ```shell
 git log --oneline --graph --all
 # * 401c27f (HEAD -> master) Filled empty file
@@ -542,7 +547,7 @@ git log --oneline --graph --all
 # * 23d9585 Initial commit
 ```
 
-Na commicie `a7f3d48` nastąpiło rozwidlenie historii projektu. Zwykle, w pewnym momencie 
+Na commicie `a7f3d48` nastąpiło rozwidlenie historii projektu. Zwykle, w pewnym momencie
 niezależnie rozwijane gałęzie muszą ulec połączeniu celem wypracowania jednej, spójnej rewizji
 integrującej całą równoległą pracę. Służy do tego operacja `git merge` tworząca commity
 o wielu przodkach.
@@ -578,15 +583,11 @@ oraz ich najbliższego wspólnego przodka: punkt rozwidlenia `a7f3d48`.
 
 ```mermaid
 graph LR
-    classDef commit fill:#f9a825,stroke:#333,stroke-width:2px,font-weight:bold,rx:2px,ry:2px
-    classDef new fill:#90EE90,stroke:#333,stroke-width:2px,font-weight:bold,rx:2px,ry:2px
-
-    classDef ref fill:#add8e6,stroke:none,color:#000,font-family:monospace,font-size:12px,padding:2px,rx:5px,ry:5px;
-
-
+    classDef commit fill: #f9a825, stroke: #333, stroke-width: 2px, font-weight: bold, rx: 2px, ry: 2px
+    classDef new fill: #90EE90, stroke: #333, stroke-width: 2px, font-weight: bold, rx: 2px, ry: 2px
+    classDef ref fill: #add8e6, stroke: none, color: #000, font-family: monospace, font-size: 12px, padding: 2px, rx: 5px, ry: 5px;
     development:::ref --> A
 %%  development:::ref -.-> M
-  
     A["5e11eea\n'Feature Hi!'"]:::commit
     B["401c27f\n'Hi!'"]:::commit
     C["a7f3d48\n'Hi!'"]:::commit
@@ -595,7 +596,6 @@ graph LR
     B --> C
     M --> A
     M --> B
-    
     master:::ref --> B
 ```
 
@@ -621,14 +621,11 @@ git merge feature
 
 ```mermaid
 graph LR
-    classDef commit fill:#f9a825,stroke:#333,stroke-width:2px,font-weight:bold,rx:2px,ry:2px
-    classDef new fill:#90EE90,stroke:#333,stroke-width:2px,font-weight:bold,rx:2px,ry:2px
-    classDef ref fill:#add8e6,stroke:none,color:#000,font-family:monospace,font-size:12px,padding:2px,rx:5px,ry:5px;
-
-
+    classDef commit fill: #f9a825, stroke: #333, stroke-width: 2px, font-weight: bold, rx: 2px, ry: 2px
+    classDef new fill: #90EE90, stroke: #333, stroke-width: 2px, font-weight: bold, rx: 2px, ry: 2px
+    classDef ref fill: #add8e6, stroke: none, color: #000, font-family: monospace, font-size: 12px, padding: 2px, rx: 5px, ry: 5px;
     development:::ref --> A
 %%  development:::ref -.-> M
-  
     A["5e11eea\n'Feature Hi!'"]:::commit
     B["401c27f\n'Master Hi!'"]:::commit
     C["a7f3d48\n'Hi!'"]:::commit
@@ -637,11 +634,10 @@ graph LR
     B --> C
     M --> A
     M --> B
-    
     master:::ref --> B
 ```
 
-Operacja `git merge` jest wykonana częściowo i została zatrzymana przed 
+Operacja `git merge` jest wykonana częściowo i została zatrzymana przed
 wypracowaniem scalonego commita. Katalog roboczy i indeks zawierają teraz częściowo scalony stan.
 Pliki, których algorym nie mógł przetworzyć automatycznie,
 zawierają znaczniki w miejscach, w których wykryto konflikty.
@@ -665,11 +661,11 @@ git commit
 ```
 
 Merge to tylko jedno z narzędzi do łączenia zmian, które posiada git.
-Zachęcamy do zapoznania się z innymi: `rebase`, `rebase -i`, `cherry-pick`. 
+Zachęcamy do zapoznania się z innymi: `rebase`, `rebase -i`, `cherry-pick`.
 
 ### Remote
 
-Git jest **rozproszonym** systemem kontroli wersji służącym do pracy nad tym samym projektem 
+Git jest **rozproszonym** systemem kontroli wersji służącym do pracy nad tym samym projektem
 na wielu stacjach roboczych. Typowo, każdy autor posiada na swojej maszynie
 własne repozytorium i synchronizuje jego zawartość z repozytoriami zdalnymi,
 korzystając z danego protokołu sieciowego do wymiany obiektów (np. http lub ssh).
@@ -694,6 +690,7 @@ Klonując repozytorium git automatycznie dodaje remote
 o nazwie `origin` wskazujący na miejscie z którego klonujemy.
 
 Istnieją jedynie 4 polecnia komunikujące się ze zdalnym repozytorium:
+
 * `git clone`
 * `git fetch`
 * `git pull`
@@ -702,7 +699,7 @@ Istnieją jedynie 4 polecnia komunikujące się ze zdalnym repozytorium:
 Wszystko inne nie dotyka w żaden sposób zdalnej kopii.
 
 `git push` aktualizuje zdalne referencje.
-Powoduje, że branch w zdalnym repozytorium odpowiadający lokalnemu branchowi 
+Powoduje, że branch w zdalnym repozytorium odpowiadający lokalnemu branchowi
 pokazuje na ten sam commit co lokalnie. W konsekwencji przesyła obiekty: `commit`, `tree`, `blob`
 które mogą nie być obecne w repozytorium zdalnym.
 
@@ -778,11 +775,11 @@ git checkout development
 Czyli robi dokładnie to co fetch i następnie łączy lokalną gałąź z jej zdalnym odpowiednikiem
 potencjalnie tworząc merge commit.
 
-
 ## Rodzaje kompilacji
 
 Ten sam projekt może zostać zbudowany na wiele różnych sposobów, w zależności od późniejszego wykorzystania
-binariów. Istnieje mnóstwo [przełączników kompilatora](https://gcc.gnu.org/onlinedocs/gcc/Option-Summary.html), sterujących procesem translacji, wypływających na to,
+binariów. Istnieje mnóstwo [przełączników kompilatora](https://gcc.gnu.org/onlinedocs/gcc/Option-Summary.html),
+sterujących procesem translacji, wypływających na to,
 co zostanie wygenerowane w zawartości pliku wynikowego.
 
 Flaga `-g` zapisuje w pliku wynikowym informacje dla debugera.
@@ -791,7 +788,7 @@ Flagi z rodziny `-W`: `-Wall`, `-Wextra`, `-Wpedantic`, `-Wshadow`, `-Wno-shadow
 włączają i wyłączają różnorodne ostrzeżenia kompilatora.
 
 Flagi z rodziny `-O`: `-O0`, `-O1`, `-O2`, `-O3`, `-Os`, `-Ofast`, `-Og`, `-Oz`
-sterują poziomem optymalizacji. Kolejne poziomy 0, 1, 2, 3 
+sterują poziomem optymalizacji. Kolejne poziomy 0, 1, 2, 3
 dodają coraz więcej przyśpieszeń, wydłużając proces kompilacji
 i przyśpieszając generowany kod.
 
@@ -800,7 +797,7 @@ programu, ułatwiając wczesne wykrywanie błędów, spowalniając jego wykonani
 
 Programiści zwykle wprowadzają kilka różnych typów kompilacji
 różniących się zestawami flag. Minimalnie wyróżnia się
-typ `Debug` i `Release`. Pierwszy jest używany przez programistów 
+typ `Debug` i `Release`. Pierwszy jest używany przez programistów
 podczas rozwoju oprogramowania. Drugi używany jest do budowy oprogramowania dostarczanego odbiorcom.
 Przykładowe zestawy flag:
 
@@ -827,6 +824,7 @@ time ./sum.release
 # user    0m0,098s
 # sys     0m0,181s
 ```
+
 Source: [sum.cpp](sum.cpp)
 
 Dobry system budowania dostarcza wsparcie dla różnych, nazwanych typów kompilacji.
@@ -834,6 +832,7 @@ Dobry system budowania dostarcza wsparcie dla różnych, nazwanych typów kompil
 ## Systemy Budowania
 
 C++ nie ma wystandaryzowanego systemu budowania. Różne platformy dostarczają swoje narzędzia:
+
 * GNU Make (Linux)
 * MinGW Make (Windows + MinGW)
 * NMake (Windows + VisalStudio)
@@ -846,6 +845,7 @@ Do tej pory wykorzystywaliśmy GNU Make.
 Projekty wieloplatformowe, których kod jest rozwijany, np. dla platform Windows i Linux
 potrzebują systemu budowania opisującego projekt w sposób niezależny od platformy.
 Środowisko programistów stworzyła kilka takich narzędzi, np.:
+
 * [CMake](https://cmake.org/)
 * [Bazel](https://bazel.build/)
 * [Meson](https://mesonbuild.com/)
@@ -859,12 +859,15 @@ Ma ogromny (> 50%) udział w rynku. Rozpoczynając pracę w projekcie pisanym w 
 
 ## CMake
 
-[CMake](https://cmake.org/) to tzw. meta system budowania (_meta build system_). To narzędzie, które na podstawie skryptowego opisu projektu
-generuje właściwy system budowania, odpowiedni dla platformy (np. Unix Makefiles), na którą w danej chwili budujemy oprogramowanie.
-Ten sam opis może posłużyć do generacji innego systemu budowania, budując projekt w odmiennym środowisku (np. VS Solutions).
+[CMake](https://cmake.org/) to tzw. meta system budowania (_meta build system_). To narzędzie, które na podstawie
+skryptowego opisu projektu
+generuje właściwy system budowania, odpowiedni dla platformy (np. Unix Makefiles), na którą w danej chwili budujemy
+oprogramowanie.
+Ten sam opis może posłużyć do generacji innego systemu budowania, budując projekt w odmiennym środowisku (np. VS
+Solutions).
 
 CMake to zwykły program, który trzeba zainstalować, najlepiej przy pomocy menadżera pakietów.
-Narzędzie `cmake` odczytuje konfigurację z gównego katalogu projektu, tzw. **source directory** 
+Narzędzie `cmake` odczytuje konfigurację z gównego katalogu projektu, tzw. **source directory**
 i generuje właściwy system budowania w innym katalogu, tzw. **build directory**, często zagnieżdżonym w źródłach.
 Istnieje też możliwość wygenerowania systemu budowania w tym samym katalogu, co źródła, czyli tzw. _in-source-build_.
 To odradzana opcja ze względu na zaśmiecanie katalogu źródłowego plikami tymczasowymi.
@@ -873,7 +876,8 @@ Projekt jest opisywany za pomocą tekstowych skryptów konfiguracyjnych `CMakeLi
 zawsze przebiega przez następujące po sobie fazy: **configure**, **generate**. Potem zwykle następuje uruchomienie
 wygenerowanego systemu budowania, czyli tzw. faza **build**.
 
-Minimalny projekt składa się z pliku [main.cpp](cmake/intro/main.cpp) i opisu [CMakeLists.txt](cmake/intro/CMakeLists.txt):
+Minimalny projekt składa się z pliku [main.cpp](cmake/intro/main.cpp) i
+opisu [CMakeLists.txt](cmake/intro/CMakeLists.txt):
 
 ```cmake
 cmake_minimum_required(VERSION 3.16)
@@ -923,6 +927,7 @@ Warto zwrócić uwagę na wyjście generowane przez program:
 ```
 
 Narzędzie wykonało mnóstwo pracy niejawnie:
+
 * odnalazło w systemie kompilator dla języków C i C++ (`gcc` i `g++`).
 * sprawdziło, czy kompilatory działają poprawnie (budując mały program generowany w locie)
 * przetestowało kompilatory pod względem wspieranych funkcjonalności i interfejsu
@@ -937,6 +942,7 @@ Wykonując instrukcje w nim zawarte generuje plik `CMakeCache.txt` w katalogu wy
 go tzw. **cache variables**. Są zmienne tekstowe, pary klucz-wartość, których wartości są zachowywane
 pomiędzy następującymi po sobie wywołaniami `cmake`. Dzięki zapamiętywaniu re-generacja jest znacznie szybsza.
 Przykładowe informacje cache'owane w zmiennych to:
+
 * wykryty kompilator i inne narzędzia do budowania
 * rodzaj kompilacji, flagi kompilatora
 * opcje specyficzne dla projektu
@@ -946,13 +952,15 @@ Wyjście z ponownego uruchomienia jest znacznie krótsze:
 ```shell
 cmake -S cmake/intro -B build
 ```
+
 ```
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
 -- Build files have been written to:/cpp-site/content/wyk/w4/build
 ```
 
-Zawartość cache zwykle nie zmienia się pomiędzy wywołaniami, choć czasami może być to przydatne (np. zmiana rodzaju kompilacji).
+Zawartość cache zwykle nie zmienia się pomiędzy wywołaniami, choć czasami może być to przydatne (np. zmiana rodzaju
+kompilacji).
 Użytkownik ma możliwość edycji wartości zmiennych w `CMakeCache.txt`. Może to zrobić ręcznie, przy użyciu `cmakegui`
 lub z poziomu linii zlecenia za pomocą opcji `-D <var>:<type>=<value>`:
 
@@ -962,12 +970,14 @@ cmake -DCMAKE_BUILD_TYPE:STRING=Release build # Zapisz wartość CMAKE_BUILD_TYP
 
 ### Generate
 
-Po zakończeniu wykonania skryptu `CMakeLists.txt` narzędzie natychmiast wykonuje drugi krok: generację natywnego buildsystemu.
+Po zakończeniu wykonania skryptu `CMakeLists.txt` narzędzie natychmiast wykonuje drugi krok: generację natywnego
+buildsystemu.
 O tym, jaki buildsystem zostatnie wygenerowany (makefile, ninja, VS Solutions, etc.) decyduje wartość zmiennej
 `CMAKE_GENERATOR` w `CMakeCache.txt`.
 
 Ten krok jest w większości całkowicie automatyczny. Skrypty, które pisze użytkownik są w całości wykonywane wcześniej.
-Istnieje pewna klasa wyrażeń, tzw. [generator expressions](https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html),
+Istnieje pewna klasa wyrażeń,
+tzw. [generator expressions](https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html),
 których ewaluacja jest opóźniana aż do kroku generacji.
 
 ### Build
@@ -987,7 +997,8 @@ cmake --build build --target clean
 cmake --build build
 ```
 
-Większość generowanych systemów budowania na począku sprawdza, czy czasem opis projektu się nie zmienił (`CMakeLists.txt`).
+Większość generowanych systemów budowania na począku sprawdza, czy czasem opis projektu się nie zmienił (
+`CMakeLists.txt`).
 Jeśli tak to automatycznie ponownie wykonuje `cmake` przed krokiem build.
 
 ![CMake Workflow](https://cgold.readthedocs.io/en/latest/_images/workflow.png)
@@ -1005,7 +1016,6 @@ cmake --build build
 # [100%] Linking CXX executable intro
 # [100%] Built target intro
 ```
-
 
 ### Struktura projektu
 
@@ -1044,6 +1054,7 @@ testy dla biblioteki `utils`.
     │   └── utils.hpp
     └── utils.cpp
 ```
+
 Sources:
 {{< github-link "cmake/libs" >}}
 
@@ -1071,25 +1082,29 @@ razem z towarzyszącym opisem.
 
 Kluczowym zadaniem skryptów `CMakeLists.txt` jest zadeklarowanie
 budowalnych elementów projektu: bibliotek i plików wykonywalnych.
-Służą ku temu dyrektywy [`add_executable`](https://cmake.org/cmake/help/latest/command/add_executable.html) 
+Służą ku temu dyrektywy [`add_executable`](https://cmake.org/cmake/help/latest/command/add_executable.html)
 i [`add_library`](https://cmake.org/cmake/help/latest/command/add_library.html):
 
 ```
 add_executable(<name> [source1] [source2 ...])
 ```
+
 ```
 add_library(<name> [STATIC | SHARED | MODULE] [<source>...])
 ```
 
-Ścieżki do źródeł są podawane względem katalogu, w którym znajduje aktualnie wykonywany plik `CMakeLists.txt`. 
+Ścieżki do źródeł są podawane względem katalogu, w którym znajduje aktualnie wykonywany plik `CMakeLists.txt`.
 
-Biblioteki i programy mają różnorodne [**właściwości**](https://devdocs.io/cmake~3.24/manual/cmake-properties.7#properties-on-targets)
+Biblioteki i programy mają różnorodne [**właściwości
+**](https://devdocs.io/cmake~3.24/manual/cmake-properties.7#properties-on-targets)
 pozwalające sterować procesem ich budowania. Do najważniejszych należą:
-* `INCLUDE_DIRECTORIES` katalogi, w których poszukiwane są pliki nagłówkowe podczas budowania biblioteki/programu 
-* `INTERFACE_INCLUDE_DIRECTORIES`: katalogi, w których poszukiwane są pliki nagłówkowe podczas budowania bibliotek/programów zależnych  
+
+* `INCLUDE_DIRECTORIES` katalogi, w których poszukiwane są pliki nagłówkowe podczas budowania biblioteki/programu
+* `INTERFACE_INCLUDE_DIRECTORIES`: katalogi, w których poszukiwane są pliki nagłówkowe podczas budowania
+  bibliotek/programów zależnych
 * `LINK_LIBRARIES`: biblioteki linkowane podczas budowania danej biblioteki/programu
-* `INTERFACE_LINK_LIBRARIES`: biblioteki linkowane podczas budowania bibliotek/programów zależnych 
-* `COMPILE_DEFINITIONS`: makrodefinicje ustawiane podczas budowania danej biblioteki/programu 
+* `INTERFACE_LINK_LIBRARIES`: biblioteki linkowane podczas budowania bibliotek/programów zależnych
+* `COMPILE_DEFINITIONS`: makrodefinicje ustawiane podczas budowania danej biblioteki/programu
 * `INTERFACE_COMPILE_DEFINITIONS`: makrodefinicje ustawiane podczas budowania bibliotek/programów zależnych
 
 Poszczególne właściwości są modyfikowane za pomocą dedykowanych procedur.
@@ -1136,8 +1151,9 @@ target_include_directories(<target> [SYSTEM] [AFTER|BEFORE]
 
 Każda grupa katalogów (`items...`) jest poprzedzona słowem `PUBLIC`, `PRIVATE` lub `INTERFACE`.
 Te mówią o tym, do których z dwóch własności `*INCLUDE_DIRECTORIES` dopisać ścieżki:
+
 * `INTERFACE` dodaje wyłącznie do własności `INTERFACE_INCLUDE_DIRECTORIES`
-* `PRIVATE` dodaje wyłącznie do własności `INCLUDE_DIRECTORIES` 
+* `PRIVATE` dodaje wyłącznie do własności `INCLUDE_DIRECTORIES`
 * `PUBLIC` dodaje jednej i drugiej
 
 Ścieżki we własności `INCLUDE_DIRECTORIES` są uwzględniane wyłącznie podczas kompilacji samej biblioteki.
@@ -1153,7 +1169,6 @@ Kiedy zatem używać jakiego trybu? Najlepiej podsumuje to tabela:
 | Nie potrzebuję                    |            | `INTERFACE`    |
 | Potrzebuję                        | `PRIVATE`  | `PUBLIC`       |
 
-
 #### Link libraries
 
 Zależności między bibliotekami i programami definiujemy _linukując_ elementy do bibliotek.
@@ -1164,9 +1179,11 @@ target_link_libraries(main PRIVATE generator)
 ```
 
 W powyższym przykładzie program `main` zależy od biblioteki `generator`.
+
 * biblioteka `generator` musi być zbudowana jako pierwsza;
 * podczas linkowania programu `main` zostanie włączona biblioteka `generator`;
-* własności `INTERFACE_*` biblioteki `generator`, takie jak `INTERFACE_INCLUDE_DIRECTORIES` będą uwzględnione podczas budowania programu `main`.
+* własności `INTERFACE_*` biblioteki `generator`, takie jak `INTERFACE_INCLUDE_DIRECTORIES` będą uwzględnione podczas
+  budowania programu `main`.
 
 Dla naszego projektu graf zależności wygląda następująco:
 
@@ -1178,7 +1195,6 @@ graph LR
     test -.->|PRIVATE| utils
 ```
 
-
 Dyrektywa `target_link_libraries()` ma podobną składnię do `target_include_directories()`:
 
 ```
@@ -1187,14 +1203,15 @@ target_link_libraries(<target>
                      [<PRIVATE|PUBLIC|INTERFACE> <item>...]...)
 ```
 
-Znaczenie słów `PRIVATE`, `PUBLIC`, `INTERFACE` jest analogiczne: 
+Znaczenie słów `PRIVATE`, `PUBLIC`, `INTERFACE` jest analogiczne:
+
 * `PRIVATE` jeżeli to ja potrzebuję biblioteki, a moi konsumenci nie
 * `PUBLIC` jeżeli zarówno ja, jak i moi konsumenci potrzebują danej biblioteki do budowania
 * `INTERFACE` jeżeli tylko moi konsumenci powinni linkować bibliotekę, ja nie muszę
 
 Słowa te wpływają na to, które z własności `LINK_LIBRARIES` i `INTERFACE_LINK_LIBRARIES` zostaną rozbudowane.
 
-> Biblioteka, która w swoich publicznych nagłówkach zawiera dyrektywy `#include ""` załączająca 
+> Biblioteka, która w swoich publicznych nagłówkach zawiera dyrektywy `#include ""` załączająca
 > nagłówki jej zależności, musi deklarować tę zależność jako PUBLIC!
 
 ## GDB
@@ -1210,7 +1227,7 @@ ale praktycznie każde środowisko programistyczne da się z nim zintegrować, u
 
 Debugger zwykle potrzebuje do pracy dodatkowych informacji opisujących wykonywany kod binarny. To tzw. symbole debugera
 opisujące zmienne, funkcje, konkretne linijki kodu, pozwalą tłumaczyć adres wykonywanej instrukcji lub adres zmiennej
-na ich umiejscowienie w kodzie źródłowym. Bez tych informacji wyjście debugera będzie nieczytelne. 
+na ich umiejscowienie w kodzie źródłowym. Bez tych informacji wyjście debugera będzie nieczytelne.
 
 Kompilator generuje te informacje w procesie translacji i może je opcjonalnie umieścić w pliku wynikowym.
 Przykładowo, w `gcc` i `clang` służy do tego przełącznik `-g`. Niektóre kompilatory umieszczają symbole w osobnym pliku.
@@ -1220,6 +1237,7 @@ g++ gdb/main.cpp -o main.out && ll -h main.out
 g++ -g gdb/main.cpp -o main.out && ll -h main.out
 file main.out
 ```
+
 Source: [main.cpp](gdb/main.cpp)
 
 Symbole można wydzielić do osobnego pliku za pomocą narzędzia `objcopy`:
@@ -1287,7 +1305,7 @@ Domyślnie program wykonuje się bez zatrzymania aż do końca
 wstrzymać jego wykonanie. Służy do tego tzw.
 breakpoint, czyli oznaczone miejsce w programie, po którego osiągnięciu
 
-Breakpointy definiujemy poleceniem `break` podając nazwę funkcji, 
+Breakpointy definiujemy poleceniem `break` podając nazwę funkcji,
 numer linii w kodzie lub nawet adres pojedynczej instrukcji.
 
 ```
@@ -1325,6 +1343,7 @@ Polecenia `where` i `list` pokażą obecne miejsce w programie:
 ### Nawigacja
 
 Do sterowania krokowym wykonaniem programu po osiągnięciu breakpointa służą 3 polecenia:
+
 * `next`: przejdź do następnej linii kodu
 * `step`: przejdź do następnej instrukcji (wchodząc do funkcji)
 * `finish`: wyjdź z obecnej funkcji
@@ -1338,6 +1357,7 @@ Polecenie `continue` wznawia wykonanie programu aż do osiągnięcia następnego
 
 `gdb` ma dostęp do całej pamięci programu w trakcie wykonania. Może ją odczytywać i modyfikować!
 Po wstrzymaniu wykonywania programu możemy np. wydrukować wartości zmiennych lub je ustawić za pomocą poleceń:
+
 * `print` ewaluuje wartość wyrażenia i je wyświetla
 * `set variable` ustawia wartość zmiennej
 
@@ -1366,6 +1386,7 @@ g++ -g gdb/core.cpp -o core.out
 ./core.out hi my friend
 # Segmentation fault (core dumped)
 ```
+
 Source: [core.cpp](gdb/core.cpp)
 
 Program zakończył się z błędem. Otrzymaliśmy komunikat _Segmentation fault (core dumped)_ - co to oznacza?
@@ -1382,6 +1403,7 @@ w katalogu z programem, na niektórych w jakimś katalogu systemowym.
 Należy to sprawdzić w dokumentacji konkretnego systemu.
 
 Przykładowo, na Ubuntu, po zainstalowaniu pakietu `systemd-coredump` wygląda to tak:
+
 ```shell
 coredumpctl list # wyświetl listę zrzutów
 # TIME                           PID  UID  GID SIG     COREFILE EXE                                               SIZE
@@ -1389,7 +1411,7 @@ coredumpctl list # wyświetl listę zrzutów
 # Sun 2025-04-06 16:10:02 CEST 30119 1000 1000 SIGSEGV present  /cpp-site/content/wyk/w4/core.out 2.4M
 coredumpctl dump --output my.core # zapisz ostatni zrzut do pliku my.core
 ll -h
-# -rw-rw-r-- 1 saqq saqq 6,3M kwi  6 16:11 my.core
+# -rw-rw-r-- 1 user user 6,3M kwi  6 16:11 my.core
 ```
 
 Poleceniem `gcore` można również wymusić zrzut pamięci działającego procesu, podając jego
@@ -1437,6 +1459,7 @@ gdb core.out # alternatywnie gdb core.out my.core
 
 Nie można wykonywać dalej takiego programu, można tylko oglądać jego stan w momencie zrzutu.
 Przydatne podczas diagnostyki mogą być tutaj polecenia:
+
 * `backtrace`: wydruk stosu wywołań
 * `up`/`down`: nawigacja w dół/górę po ramkach stosu
 
@@ -1473,19 +1496,22 @@ g++ -g -fsanitize=leak lsan.cpp -o lsan.out
 # 
 # Direct leak of 3 byte(s) in 3 object(s) allocated from:
 #     #0 0x7b7705616222 in operator new(unsigned long) ../../../../src/libsanitizer/lsan/lsan_interceptors.cpp:248
-#     #1 0x5ded302fa1f9 in main /home/saqq/repos/cpp-site/content/wyk/w4/lsan.cpp:12
+#     #1 0x5ded302fa1f9 in main /cpp-site/content/wyk/w4/lsan.cpp:12
 #     #2 0x7b7704e2a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
 #     #3 0x7b7704e2a28a in __libc_start_main_impl ../csu/libc-start.c:360
-#     #4 0x5ded302fa0e4 in _start (/home/saqq/repos/cpp-site/content/wyk/w4/lsan.out+0x10e4) (BuildId: c391bc698ad8a7fa4075a0046f4f1e37d4770943)
+#     #4 0x5ded302fa0e4 in _start (/cpp-site/content/wyk/w4/lsan.out+0x10e4) (BuildId: c391bc698ad8a7fa4075a0046f4f1e37d4770943)
 # 
 # SUMMARY: LeakSanitizer: 3 byte(s) leaked in 3 allocation(s).
 ```
+
 Source: [lsan.cpp](lsan.cpp)
 
 ### Undefined Behavior Sanitizer (UBSan)
 
-UBsan wykrywa [liczne, różnorodne błędy](https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html#index-fsanitize_003dundefined)
-t.j. dereferencje niepoprawnych wskaźników, dzielenie przez 0, przepełnienia podczas rzutowań i innych operacji arytmetycznych.
+UBsan
+wykrywa [liczne, różnorodne błędy](https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html#index-fsanitize_003dundefined)
+t.j. dereferencje niepoprawnych wskaźników, dzielenie przez 0, przepełnienia podczas rzutowań i innych operacji
+arytmetycznych.
 Dodaje sprawdzenia przez każdą instrukcją mogącą wywołać niezdefiniowane zachowanie.
 
 ```shell
@@ -1493,6 +1519,7 @@ g++ -g -fsanitize=undefined ubsan.cpp -o ubsan.out
 ./ubsan.out
 # ubsan.cpp:5:7: runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type 'int'
 ```
+
 Source: [ubsan.cpp](ubsan.cpp)
 
 ### Stack Protector
@@ -1511,9 +1538,271 @@ g++ -g -fstack-protector stack-protector.cpp -o stack-protector.out
 # *** stack smashing detected ***: terminated
 ```
 
+## Zależności
+
+Podobnie jak w przypadku buildsystemu, C++ nie posiada standardowego menadżera zależności projektu.
+Zależność od zewnętrznej biblioteki jest tym samym ciężka do zdefiniowania w sposób przenośny i zrozumiały
+dla innych programistów.
+
+Weźmy jako przykład użycie popularnej małej biblioteki do formatowania tekstu [libfmt](https://github.com/fmtlib/fmt)
+w naszym programie:
+
+```cpp
+#include <fmt/core.h>
+
+int main() {
+  fmt::print("Hello, world!\n");
+}
+```
+
+Source: {{< github-link "deps/" >}}.
+
+Budując ten projekt najpewniej dostaniemy błąd podczas analizy dyrektywy `#include`:
+
+```shell
+cmake -S deps -B deps/build
+cmake --build deps/build
+# /cpp-site/content/wyk/w4/deps/src/main.cpp:1:10: fatal error: fmt/core.h: No such file or directory
+#     1 | #include <fmt/core.h>
+#       |          ^~~~~~~~~~~~
+```
+
+Biblioteka `fmt` musi być dostępna dla linkera, żeby ten poprawnie zastosował flagę `-lfmt`.
+
+Skąd wziąć tą bibliotekę? Gdzie ją umieścić? Jest wiele opcji.
+
+### Systemowy menadżer pakietów
+
+```shell
+sudo apt install libfmt-dev
+cmake --build build
+```
+
+W systemie buudowania należy przekazać odpowiednią flagę linkera:
+
+```cmake
+target_link_libraries(main PRIVATE fmt)
+```
+
+Wady:
+
+* Możemy nie mieć uprawnień do instalowania
+* Na etapie konfiguracji projektu buildsystem `cmake` nie jest w stane stwierdzić czy biblioteka istnieje, czy nie
+* Trzeba dokumentować, np. w pliku `README.md`, co trzeba zainstalować, zanim zaczniemy pracować z projektem
+* Programiści rozwijający ten sam projekt na różnych maszynach z różnymi systemami mogą zainstalować bibliotekę w
+  różnych wersjach
+
+```shell
+sudo apt remove libfmt-dev
+```
+
+### Budowanie ręczne
+
+Można oczywiście pobrać źródła, zbudować, zainstalować w jakimś katalogu, który wskażemy systemowi budowania.
+
+```shell
+git clone https://github.com/fmtlib/fmt fmt
+cmake -S fmt -B fmt/build -DCMAKE_INSTALL_PREFIX=$(pwd)/libs/fmt/
+cmake --build fmt/build --parallel 8
+cmake --build fmt/build --target install
+```
+
+```shell
+cmake -S deps -B deps/build -DCMAKE_PREFIX_PATH=$(pwd)/libs/fmt/
+cmake --build deps/build
+```
+
+Wady:
+
+* Budowanie zależności może trwać bardzo długo
+* Każdy programista musi wykonać ręcznie dużo kroków, zanim zacznie pracować z właściwym projektem
+* Aktualizacja biblioteki również musi być ręcznie wykonana i nadzorowana
+
+### Włączenie źródeł
+
+Można pobrać źródła i włączyć je do własnego projektu.
+
+```shell
+git clone https://github.com/fmtlib/fmt deps/libs/fmt
+cmake -S deps -B deps/build
+```
+
+Wady:
+
+* Budowanie zależności może trwać bardzo długo
+* Trzeba ręcznie klonować przed rozpoczęciem pracy
+* Aktualizacja biblioteki również musi być ręcznie wykonana i nadzorowana
+* Sama zależność musi mieć kompatybilny system budowania (cmake)
+
+### Pobranie źródeł podczas konfiguracji
+
+`cmake` może pobierać źródła w trakcie konfiguracji projektu.
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG 10.1.1 # Use the specific version you want (e.g., latest stable tag)
+)
+FetchContent_MakeAvailable(fmt)
+```
+
+Moduł CMake `FetchContent` pozwala pobierać zawartość repozytorium i budować ją w trakcie kroku `configure`.
+
+Wady:
+
+* Budowanie zależności może trwać bardzo długo
+* Sama zależność musi mieć kompatybilny system budowania (cmake)
+
+Podobnym rozwiązaniem byłoby użycie funkcjonalności `git`: `git submodule` (dla chętnych).
+
+### Dedykowany menadżer pakietów
+
+Jednym z dostępnych narzędzi jest [vcpkg](https://github.com/microsoft/vcpkg).
+Trzeba go zainstalować:
+
+```shell
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh  # Linux/macOS
+```
+
+Potem można z niego korzystać podobnie do menadżera systemowego:
+
+```shell
+./vcpkg search fmt
+# fmt                      11.0.2#1         {fmt} is an open-source formatting library providing a fast and safe alter...
+./vcpkg install fmt
+```
+
+Systemowi budowania trzeba wskazać, że ma korzystać z pakietów zainstalowanych w `vcpkg`:
+
+```shell
+rm -Rf deps/build
+cmake -S deps -B deps/build -DCMAKE_TOOLCHAIN_FILE=/home/saqq/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build deps/build
+```
+
+Wady:
+
+* Nowe narzędzie, często skomplikowane
+* Trzeba ręcznie dokumentować jakie zależności należy zainstalować
+
+Podobnym, równie popularnym rozwiązaniem jest [conan](https://conan.io/).
+
 ## Testowanie
 
-## Profiling
+Oprogramowanie trzeba testować. Testowanie polega na uruchamianiu
+naszego kodu lub jego części i sprawdzaniu jego odpowiedzi na określone wejście.
+Testy automatyczne to **programy**, które uruchamiają pojedyncze funkcje, moduły, komponenty, aż do całego rozwiązania,
+symulują wejście, oczekują określonego wyjścia.
+
+Można robić to ręcznie tak jak w przykładowym projekcie CMake:
+
+```cpp
+static int test_counter = 1;
+
+void run_test(void (*fn)()) {
+    std::cout << "Test no. " << test_counter++ << ": ";
+    fn();
+    std::cout << "OK" << std::endl;
+}
+
+void test_random_name_not_empty() {
+    std::string name = utils::random_name();
+    assert(name.size() > 0);
+}
+
+void test_random_name_starts_uppercase() {
+    std::string name = utils::random_name();
+    assert(name[0] >= 'A' && name[0] <= 'Z');
+}
 
 
+int main() {
+    std::srand(std::time(nullptr));
+    run_test(test_random_name_not_empty);
+    run_test(test_random_name_starts_uppercase);
+    return 0;
+}
+```
 
+Source: [test.cpp](cmake/libs/test/test.cpp)
+
+Nietrudno zauważyć, że ten mikro-framework składający się z funkcji `run_test` jest dość ubogi.
+Istnieje wiele bibliotek ułatwiających zadanie programistom C++:
+
+* [GoogleTest](https://github.com/google/googletest)
+* [Boost.Test](https://www.boost.org/doc/libs/1_82_0/libs/test/doc/html/index.html)
+* [Catch2](https://github.com/catchorg/Catch2)
+* [CppUnit](https://freedesktop.org/wiki/Software/cppunit/)
+
+### GoogleTest
+
+Najpopularniejszą jest pierwsza: `GTest`. Warto ją znać i wykorzystywać do testowania swojego kodu.
+Dokumentacja jest dostępna pod adresem: https://google.github.io/googletest/primer.html
+Biblioteka dostarcza funkcje do definiowania i wykonywania testów, generując czytelne raporty.
+
+Rozważmy przykładowy projekt złożony z biblioteki `functions` i pliku wykonywalnego `main`:
+{{< github-link "testing/" >}}.
+
+```shell
+cmake -S testing -B testing/build
+cmake --build testing/build
+./testing/build/test/fn_test
+```
+
+Projekt pobiera bibliotekę GTest za pomocą mechanizmu `FetchContent` i
+dostarcza kilka przykładowych testów w katalogu `test/`.
+
+Pojedyncze testy w GTest definiuje się za pomocą makra `TEST(TestSuite, TestName)`:
+
+```cpp
+TEST(HelloTest, BasicAssertions) {
+  EXPECT_STRNE("hello", "world");
+  EXPECT_EQ(7 * 6, 42);
+}
+```
+
+Test jest funkcją, jej ciało następuje w bloku `{ ... }` po makrze `TEST`.
+Można tam wstawić dowolny kod.
+
+GTest dostarcza potężny [zestaw makr](https://google.github.io/googletest/reference/assertions.html) `ASSERT_` i
+`EXPECT_`, których używamy do sprawdzenia poprawności zachowania testowanego kodu. `ASSERT_` w przeciwieństwie
+do `EXPECT_` przerywa działanie testu w przypadku niepoprawności.
+
+Zwykły test nie ma parametrów, musi wszystko przygotować w ciele. Często zestaw testów
+współdzieli dane, zależności, które trzeba przygotować przed właściwym testem. Kończyłoby się to dużą duplikacją.
+
+GTest pozwala definiować klasy (tzw. _fixtury_), które zawierają dane i kod przygotowujący do wykonania testu.
+Pola klasy są dostępne z poziomu ciała testu.
+
+```cpp
+class MyTestSuite : public ::testing::Test {
+protected:
+  std::vector vals;
+  
+  MyTestSuite() {}  // #1
+  
+  void SetUp() { vals = {1, 2, 3} }  // #2
+  
+  void TearDown() {}  // #4
+  
+  ~MyTestSuite();  // #5
+};
+
+TEST_F(MyTestSuite, MyTest1) {  
+  EXPECT_EQ(vals.size(), 3);  // #3
+}
+
+TEST_F(MyTestSuite, MyTest2) {
+  EXPECT_EQ(vals[0], 1);  // #3
+}
+```
+
+GTest przed każdym testem oznaczonym jako `TEST_F` powołuje do życia obiekt fixtury (wywołując konstruktor), 
+uruchamia metodę `SetUp()`, potem wykonuje test, następnie wywołuje metodę `TearDown()` i niszczy obiekt fixtury.
+Ten proces dzieje się dla każdego testu osobno.
+
+Przykład użycia w [string_test.cpp](testing/test/string_test.cpp).
