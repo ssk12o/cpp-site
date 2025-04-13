@@ -38,7 +38,7 @@ ls -l .git
 Takie polecenie utworzy w pustym katalogu roboczym puste repozytorium: niezawierające jeszcze
 żadnych zapisanych wersji.
 
-```
+```text
 -rw-rw-r-- 1 user user   92 mar 22 10:11 config        # Lokalna konfiguracja repozytorium
 -rw-rw-r-- 1 user user   73 mar 22 10:11 description   # Czytelny opis repozytorium
 -rw-rw-r-- 1 user user   23 mar 22 10:11 HEAD          # Wskazanie na "bieżący" commit
@@ -104,7 +104,7 @@ git ls-tree 8da9
 
 Jeden z nich to właśnie tree. Jego zawartość to listing katalogu, którego stan opisuje.
 
-```
+```text
 100644 blob 663adb09143767984f7be83a91effa47e128c735    hi.txt
 ```
 
@@ -140,7 +140,7 @@ git commit -m "Copied hi.txt"
 git ls-tree a5250
 ```
 
-```
+```text
 100644 blob 663adb09143767984f7be83a91effa47e128c735    hey.txt
 100644 blob 663adb09143767984f7be83a91effa47e128c735    hi.txt
 ```
@@ -155,7 +155,7 @@ Commity to główne obiekty repozytorium tworzone w momencie utrwalania wersji p
 git cat-file commit a7f3
 ```
 
-```
+```text
 tree a5250f7c6ad5260e28003ba5a0b1841b752918e3
 parent 23d9585ca2a2fe493f79c75956ab4d815da14b73
 author Paweł Sobótka <pawel.sobotka@pw.edu.pl> 1742665566 +0100
@@ -908,7 +908,7 @@ cmake -S cmake/intro -B build
 Powyższe wywołania robią to samo: generują buildsystem w katalogu `build` dla projektu w katalogu `cmake/intro`.
 Warto zwrócić uwagę na wyjście generowane przez program:
 
-```
+```text
 -- The C compiler identification is GNU 13.3.0
 -- The CXX compiler identification is GNU 13.3.0
 -- Detecting C compiler ABI info
@@ -953,7 +953,7 @@ Wyjście z ponownego uruchomienia jest znacznie krótsze:
 cmake -S cmake/intro -B build
 ```
 
-```
+```text
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
 -- Build files have been written to:/cpp-site/content/wyk/w4/build
@@ -1028,7 +1028,7 @@ Popatrzmy na przykładowy projekt składający się z biblioteki `utils`, pliku 
 `main` korzystającego z tej biblioteki, oraz pliku wykonywalnego `test` zawierającego
 testy dla biblioteki `utils`.
 
-```
+```text
 .
 ├── CMakeLists.txt
 ├── generator
@@ -1085,11 +1085,11 @@ budowalnych elementów projektu: bibliotek i plików wykonywalnych.
 Służą ku temu dyrektywy [`add_executable`](https://cmake.org/cmake/help/latest/command/add_executable.html)
 i [`add_library`](https://cmake.org/cmake/help/latest/command/add_library.html):
 
-```
+```text
 add_executable(<name> [source1] [source2 ...])
 ```
 
-```
+```text
 add_library(<name> [STATIC | SHARED | MODULE] [<source>...])
 ```
 
@@ -1143,7 +1143,7 @@ cmake --build build -- VERBOSE=1
 
 Pełna składnia dyrektywy wygląda następująco:
 
-```
+```text
 target_include_directories(<target> [SYSTEM] [AFTER|BEFORE]
   <INTERFACE|PUBLIC|PRIVATE> [items1...]
   [<INTERFACE|PUBLIC|PRIVATE> [items2...] ...])
@@ -1197,7 +1197,7 @@ graph LR
 
 Dyrektywa `target_link_libraries()` ma podobną składnię do `target_include_directories()`:
 
-```
+```text
 target_link_libraries(<target>
                       <PRIVATE|PUBLIC|INTERFACE> <item>...
                      [<PRIVATE|PUBLIC|INTERFACE> <item>...]...)
@@ -1262,7 +1262,7 @@ Nie przekazujemy tutaj argumentów programu. Nasz program jeszcze się nie wykon
 `gdb` interpretuje polecenia wprowadzane na standardowe wejście sterujące
 procesem debugowania. Pierwszym poleceniem będzie `run`: uruchom program.
 
-```
+```text
 (gdb) run
 Starting program: /cpp-site/content/wyk/w4/main.out
 Filling list with dummy data ...
@@ -1275,7 +1275,7 @@ Program wykonał się i zakończył poprawnie.
 
 Do polecenia `run` można przekazać argumenty programu:
 
-```
+```text
 (gdb) run 1 2 3
 Starting program: /cpp-site/content/wyk/w4/main.out 1 2 3
 Reading list from argv[]
@@ -1308,7 +1308,7 @@ breakpoint, czyli oznaczone miejsce w programie, po którego osiągnięciu
 Breakpointy definiujemy poleceniem `break` podając nazwę funkcji,
 numer linii w kodzie lub nawet adres pojedynczej instrukcji.
 
-```
+```text
 (gdb) break main.cpp:87
 (gdb) break SortedLinkedList::remove
 (gdb) info break
@@ -1324,7 +1324,7 @@ Wykonanie programu zostało wstrzymane **przed** wejściem do metody `list.print
 
 Polecenia `where` i `list` pokażą obecne miejsce w programie:
 
-```
+```text
 (gdb) where
 #0  main (argc=1, argv=0x7fffffffdb18) at gdb/main.cpp:87
 (gdb) list
@@ -1361,7 +1361,7 @@ Po wstrzymaniu wykonywania programu możemy np. wydrukować wartości zmiennych 
 * `print` ewaluuje wartość wyrażenia i je wyświetla
 * `set variable` ustawia wartość zmiennej
 
-```
+```text
 (gdb) break fill
 (gdb) run
 Breakpoint 1.1, fill (list=..., v=std::vector of length 6, capacity 6 = {...}) at gdb/main.cpp:61
@@ -1463,7 +1463,7 @@ Przydatne podczas diagnostyki mogą być tutaj polecenia:
 * `backtrace`: wydruk stosu wywołań
 * `up`/`down`: nawigacja w dół/górę po ramkach stosu
 
-```
+```text
 (gdb) bt
 #0  0x00007347b2f68d14 in std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::size() const () from /lib/x86_64-linux-gnu/libstdc++.so.6
 #1  0x0000590a8047a8d1 in std::operator==<char, std::char_traits<char>, std::allocator<char> > (__lhs=<error reading variable: Cannot access memory at address 0x8>, __rhs="hello") at /usr/include/c++/13/bits/basic_string.h:3714

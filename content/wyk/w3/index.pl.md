@@ -214,7 +214,7 @@ Stan jest hermetyzowany w sekcji `private:`. Tylko kod tej klasy ma prawo dobier
 sekcji.
 Próba dostępu do pola `messages` z zewnątrz zakończy się błędem kompilacji.
 
-```
+```text
 /cpp-site/content/wyk/w3/mbox.cpp: In function ‘int main()’:
 /cpp-site/content/wyk/w3/mbox.cpp:47:9: error: ‘std::vector<std::__cxx11::basic_string<char> > Mailbox::messages’ is private within this context
    47 |     box.messages;
@@ -283,7 +283,7 @@ Nie da się wywołać metody, nie mając obiektu:
 Mailbox::post("hey");
 ```
 
-```
+```text
 /cpp-site/content/wyk/w3/mbox.cpp:43:18: error: cannot call member function ‘void Mailbox::post(const std::string&)’ without object
    43 |     Mailbox::post("asdf");
       |     ~~~~~~~~~~~~~^~~~~~~~
@@ -700,7 +700,7 @@ int main() {
 
 Rezultat?
 
-```
+```text
 Process finished with exit code 139 (interrupted by signal 11:SIGSEGV)
 ```
 
@@ -736,7 +736,7 @@ z racji tego, że jest to obiekt _w trakcie inicjalizacji_ `this` nie koniecznie
 
 Konstruktory poza ciałem może mieć tzw. _listę inicjalizacyjną_ w formacie: 
 
-```
+```text
 : pole1{inicjalizator}, pole2{inicjalizator}, ...
 ```
 
@@ -752,7 +752,7 @@ Konstruktor klasy stack moglibyśmy napisać na kilka różnych sposobów:
 
 Zainicjalizować jawnie `tab` i `size` na liście. Dzięki temu tablica również będzie wyzerowana:
 
-```
+```cpp
 Stack() : tab{}, size{0}
 {
 }
@@ -760,7 +760,7 @@ Stack() : tab{}, size{0}
 
 Pozostawić `tab` i `size` inicjalizowanymi domyślne (śmieciami) i potem to naprawić w ciele:
 
-```
+```cpp
 Stack()
 {
    size = 0;
@@ -769,7 +769,7 @@ Stack()
 
 Dostarczyć inicjalizator przy definicji składowej, a nie na liście. Konstruktor może być wtedy pusty.
 
-```
+```cpp
 class Stack
 {
   int tab[10]; 
@@ -1040,7 +1040,7 @@ Moment rozpoczęcia wykonania destruktora jest jednocześnie momentem końca ży
 Dzięki tej kolejności destruktor klasy może korzystać ze składowych.
 Destruktory podobiektów wykonują się w kolejności odwrotnej do kolejności ich konstrukcji:
 
-```
+```text
 A(automatic)
 B(automatic)
 C(automatic)
@@ -1137,7 +1137,7 @@ DynamicStack(const DynamicStack& other)
 ```
 Source: [dynamicstack_copy.cpp](dynamicstack_copy.cpp)
 
-```
+```cpp
 DynamicStack s(5);
 
 s.push(1);

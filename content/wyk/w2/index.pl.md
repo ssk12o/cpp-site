@@ -186,7 +186,7 @@ Przykładowo, 32-bitowy windows i Linux stosują ILP32. 64-bitowy Windows ma LLP
 
 Rozmiar w bajtach jest jeszcze słabiej wyspecyfikowany. Jedyne co standard gwarantuje to:
 
-```
+```text
 1 == sizeof(char) ≤ sizeof(short) ≤ sizeof(int) ≤ sizeof(long) ≤ sizeof(long long)
 ```
 
@@ -801,7 +801,7 @@ void allocate_all_the_thing() {
 Wyjątek powoduje natychmiastowe wychodzenie z funkcji, w górę stosu wywołań, aż do `main()`.
 Wyjątek opuszczając funkcję `main` kończy program z błędem, wywłoując `std::terminate()`:
 
-```
+```text
 terminate called after throwing an instance of 'std::bad_alloc'
   what():  std::bad_alloc
 ```
@@ -1109,7 +1109,7 @@ g++ -g -fsanitize=address asan/stack-buffer-overflow.cpp -o prog.exe && ./prog.e
 
 Przykładowe wyjście z błędem prezentuje miejsce w którym nastąpiło niepoprawne odwołanie do pamięci:
 
-```
+```text
 ==9118==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7c3308f0902a at pc 0x7c330b6fb303 bp 0x7fffad4a1a20 sp 0x7fffad4a11c8
 WRITE of size 25 at 0x7c3308f0902a thread T0
     #0 0x7c330b6fb302 in memcpy ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc:115
@@ -1132,7 +1132,7 @@ wartość mówi czy ten region jest poprawny czy nie:
 
 Mapowanie adresu na adres bajtu shadow jest prostą operacją:
 
-```
+```text
 ShadowAddress = (RealAddress >> 3) + ShadowOffset
 ```
 

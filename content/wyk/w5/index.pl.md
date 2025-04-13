@@ -38,7 +38,7 @@ Ten zabieg potrafi znacznie uprościć korzystanie z obiektów naszej klasy.
 std::string text = "Hello";
 text.append(", world!");
 text += ", world";
-````
+```
 
 Poznaliśmy już ten mechanizm przy okazji operatorów przypisania i przeniesienia `T& operator=(const T&)` i
 `T& operator=(T&&)`. Własne operatory to tak naprawdę metody o specjalnej nazwie: `operator@`, gdzie `@`
@@ -593,7 +593,7 @@ W momencie konstrukcji pary, powstają 2 podobiekty, domyślnie konstruowane.
 ```
 Source: [pair.cpp](stl/pair.cpp)
 
-```
+```text
 A()
 B()
 ~B()
@@ -607,7 +607,7 @@ p.first = A();
 p.second = B();
 ```
 
-```
+```text
 A()                // konstrukcja wartości tymczasowej A()
 A::operator=(A&&)  // przeniesienie wartości tymczasowej do wnętrza pary
 ~A()               // destrukcja wartości tymczasowej A()
@@ -625,7 +625,7 @@ std::pair<A, B> p(a, b);
 std::pair<A, B> p2(std::move(a), std::move(b));
 ```
 
-```
+```text
 A(const A&)
 B(const B&)
 A(A&&)
@@ -695,7 +695,7 @@ opt = null;
 ```
 Source: [optional.cpp](stl/optional.cpp)
 
-```
+```text
 A()           // konstrukcja obiektu A a;
 A(const A&)   // konstrukcja opt: kopia a
 ~A()          // destrukcja obiektu przechowywanego w opt
@@ -887,7 +887,7 @@ Source: [vector_growth.cpp](stl/vector_growth.cpp)
 
 Ten prosty kod woła nietrywialną ilość operacji na obiektach klasy `Int`:
 
-```
+```text
   v.push_back(0)
 Int() val = 0              // konstrukcja wartości tymczasowej Int(0)
 Int(Int&&) val = 0         // konstrukcja elementu wektora (przeniesienie)
@@ -914,7 +914,7 @@ std::cout << "  v.resize(0)" << std::endl;
 v.resize(0, Int(999));
 ```
 
-```
+```text
   v.resize(3)
 Int() val = 999            // konstrukcja wartości tymczasowej Int(999)
 Int(const Int&) val = 999  // konstrukcja elementu wektora
@@ -948,7 +948,7 @@ v.emplace_back(999);
 `push_back` kopiuje lub przenosi istniejącą wartość do wnętrza wektora.
 `emplace_back` konstruuje element już w wektorze, unikając kopii.
 
-```
+```text
   v.push_back(val)
 Int(const Int&) val = 999
   v.push_back(std::move(val))
@@ -979,7 +979,7 @@ po usunięciu.
 v.erase(v.begin() + 1, v.begin() + 4);
 ```
 
-```
+```text
 Int& operator=(Int&&) val = 4  // przeniesienie ostatniego elementu na index [1]
 ~Int() val = 2  // usunięcie v[2]
 ~Int() val = 3  // usunięcie v[3]
@@ -1004,7 +1004,7 @@ auto it = l.begin();
 l.emplace(it, 100);
 ```
 
-```
+```text
 Int() val = 0
 Int() val = 1
 Int() val = 2

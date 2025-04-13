@@ -203,7 +203,7 @@ biblioteki standardowej przechowujący ciągłą, dynamiczną tablicę znaków,
 idealny do przechowywania tekstu. Sam rośnie w miarę dodawania do niego znaków. Integruje się ze standardowymi
 strumieniami.
 
-```
+```cpp
 std::string empty;
 std::string txt = "Hello, ";
 std::string txt2 = txt + "World!"; // "Hello, World!"
@@ -393,7 +393,7 @@ Kompilatory zwykle pozwalają na selektywne sterowanie
 fazami kompilacji. Przykładowo `gcc` posiada serię flag
 pozwalającą zatrzymywać proces po jednym z 4 etapów:
 
-```
+```text
 > g++ --help
 ...
   -E  Preprocess only; do not compile, assemble or link.
@@ -574,7 +574,7 @@ błędem linkera:
 g++ undefined.cpp
 ```
 
-```
+```text
 /usr/bin/ld: /tmp/cc2rq2Me.o: in function `main':
 undefined.cpp:(.text+0x9): undefined reference to `foo()'
 ```
@@ -603,7 +603,7 @@ int foo(int x) { return 2 * x; }
 g++ odr1.cpp odr2.cpp
 ```
 
-```
+```text
 /usr/bin/ld: /tmp/ccGKwVIG.o:(.data+0x0): multiple definition of `a'; /tmp/ccxy9LGW.o:(.data+0x0): first defined here
 /usr/bin/ld: /tmp/ccGKwVIG.o: in function `foo(int)':
 odr2.cpp:(.text+0x0): multiple definition of `foo(int)'; /tmp/ccxy9LGW.o:odr1.cpp:(.text+0x0): first defined here
