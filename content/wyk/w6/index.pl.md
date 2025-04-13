@@ -1,5 +1,5 @@
 ---
-title: "W6 - Wyjątki"
+title: "W6 - Polimorfizm"
 date: 2022-02-05T18:00:18+01:00
 weight: 60
 ---
@@ -11,5 +11,5 @@ weight: 60
 * RTTI
 * Wyjątki
 * `std::error_code`
-
-
+* Funkcje lambda
+* `std::function`

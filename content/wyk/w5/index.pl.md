@@ -27,7 +27,6 @@ Zakres:
   * `std::map`
   * `std::unordered_map`
 * Algorytmy STL
-* Funkcje lambda
 
 ## Przeładowywanie operatorów
 
@@ -1095,14 +1094,221 @@ color &operator=(color &&c) (255, 0, 255)   // kopia wartości tymczasowej do no
 Dlatego nie można użyć tego operatora do wyszukiwania (bo a nuż coś wstawimy). Nie da się go też stosować
 mając `const` mapę lub referencję na stałą.
 
+Mapa jest implementowana jako struktura drzewiasta. Wstawianie i wyszukiwanie ma złożoność logarytmiczną.
+Typ klucza musi dostarczać `operator<` narzucający liniowy porządek w kontenerze.
+
 `std::set` jest tym co `std::map`, tylko bez wartości. Przechowuje same klucze.
 
 ### std::unordered_map
 
+Bardzo podobnym kontenerem jest `std::unordered_map`. Najważniejsza różnica to fakt, że klucze
+nie są posortowane. Iteracja po kontenerze następuje w jakiejś nieznanej kolejności.
+Cały interfejs omówiony dla wcześniej `std::map` jest identyczny. 
 
+Taki nieposortowany słownik jest implementowany jako tablica mieszająca. Przy każdym dostępie
+kontener oblicza funkcję skrótu na kluczu, otrzymując indeks w tablicy, gdzie ten powinien się znaleźć.
+Dzięki temu dostęp do elementów może być najczęściej wykonany w czasie stałym.
+
+Używając własnego typu jako klucza, trzeba dostarczyć mapie 2 rzeczy:
+* możliwość porównywania kluczy, najczęściej `operator==`
+* funkcję skrótu typu `std::size_t hash(Key k)`, najczęściej w postaci klasy implementującej `std::size_t operator()(Key)`
+
+```cpp
+struct color
+{
+    int r, g, b;
+    color() : r(0), g(0), b(0) {}
+    color(int r, int g, int b) : r(r), g(g), b(b) {}
+
+    bool operator==(const color& c) const {
+        return r == c.r && g == c.g && b == c.b;
+    }
+};
+
+struct color_hash {
+    std::size_t operator()(const color& c) const {
+        return (c.r << 16) ^ (c.g << 8) ^ c.b;
+    }
+};
+
+std::unordered_map<color, std::string, color_hash> color_names = {
+        {color{255, 0, 0}, "red"}, 
+        {color{0, 255, 0}, "green", }, 
+        {color{0, 0, 255}, "blue"}
+};
+```
+Source: [unordered_map.cpp](stl/unordered_map.cpp)
+
+Typ skrótu jest dostarczany mapie w postaci trzeciego parametru szablonowego.
 
 ## Algorytmy STL
 
-## Funkcje lambda
+Poza samymi kontenerami, biblioteka STL dostarcza mnóstwo [algorytmów](https://en.cppreference.com/w/cpp/algorithm).
+Funkcje te najczęściej pracują na zakresach zadanych przez 2 iteratory `[begin, end)`. Pozwalają przeszukiwać zakresy,
+sortować je, przekształcać, kopiować, przenosić, usuwać wybrane elementy, itp.
+Jest ich stanowczo za dużo do kompleksowego omawiania. Zilustrujemy bibliotekę najczęściej stosowanymi.
 
+### Minima i maksima
 
+Szablony funkcji `std::min_element`/`std::max_element` pozwalają liczyć minima i maksima z podanego zakresu:
+
+```cpp
+std::vector<int> v = {4, 2, 5, 3};
+auto min = std::min_element(v.begin(), v.end());  // 2
+auto max = std::max_element(v.begin(), v.end());  // 5
+```
+Source: [minmax.cpp](algos/minmax.cpp)
+
+Szablony `std::min`/`std::max` wybierają odpowiednio mniejszy i większy z dwóch obiektów.
+
+### Przeszukiwanie
+
+Szablony `std::find`, `std::find_if`, `std::find_if_not` iterują się
+po podanym zakresie i zwracają poszukiwany element. `std::find` szuka 
+konkretnego obiektu, dla którego porównanie zwróci `true`.
+Wersje `_if` szukają obiektu, dla którego zostanie spełniony warunek zadany
+w postaci funkcji lub funktora.
+
+```cpp
+std::vector<std::string> names = {
+  "John", "Jane", "Joseph", "Jac", "Jessica", "Jose", "Josh"
+};
+
+auto joseph = std::find(names.begin(), names.end(), "Joseph");
+
+bool is_short(const std::string& name) {
+    return name.length() < 4;
+}
+
+auto s = std::find_if(names.begin(), names.end(), is_short);
+```
+Source: [find.cpp](algos/find.cpp)
+
+### Kopiowanie
+
+Szablony `std::copy` i `std::copy_if` pozwalają kopiować elementy
+z jednego zakresu do innego. `std::copy_if` kopiuje warunkowo.
+
+```cpp
+struct starts_with {
+    char c;
+    starts_with(char c) : c{c} {}
+    bool operator()(const std::string& name) {
+        return name.length() > 0 && name[0] == c;
+    }
+};
+
+std::array<std::string, 3> names = {"Alfred", "Batman", "Catwoman"};
+
+std::vector<std::string> vnames(names.size());
+std::copy(names.begin(), names.end(), vnames.begin());
+
+std::vector<std::string> good_names(names.size());
+auto it = std::copy_if(names.begin(), names.end(), good_names.begin(), starts_with('A'));
+good_names.erase(it, good_names.end());
+```
+Source: [copy.cpp](algos/copy.cpp)
+
+### Transformacje
+
+Szablon `std::transform` przechodzi element po elemencie po zadanym zakresie,
+przepuszcza każdy element przez zadaną funkcję unarną, wynik zapisując
+w innym zakresie wynikowym.
+
+```cpp
+class room {
+    room(std::string name):
+    const std::string& name();
+};
+
+std::unique_ptr<room> make_room(int id) {
+    return std::make_unique<room>("Room " + std::to_string(id));
+}
+
+std::vector<int> ids = {107, 218, 304, 318, 404};
+std::vector<std::unique_ptr<room>> rooms(ids.size());
+std::transform(ids.begin(), ids.end(), rooms.begin(), make_room);
+for (const auto& room_ptr : rooms) {
+    std::cout << room_ptr->name() << std::endl;
+} 
+```
+Source: [transform.cpp](algos/transform.cpp)
+
+### Usuwanie
+
+Szablony `std::remove` i `std::remove_if` pozwalają usuwać z zakresu daną wartość
+lub wartości, dla których predykat jest prawdziwy.
+Usuwanie trzeba rozumieć tutaj jako reorganizację zakresu.
+Elementy usuwane są przesuwane na koniec, na początku zostają te nie usunięte.
+Obie funkcje zwracają iterator na początek sekcji usuniętych elementów.
+
+```cpp
+std::vector<int> values = {4, 2, 5, 1, 10, 4, 24, 17};
+
+bool is_even(int i) {
+    return i % 2 == 0;
+}
+auto rit = std::remove_if(values.begin(), values.end(), is_even);
+// begin -> 5, 1, 17, rit -> ?, ?, ?, ?, ?, end
+values.erase(rit, values.end());
+```
+Source: [remove.cpp](algos/remove.cpp)
+
+### Sortowanie
+
+Szablon `std::sort` sortuje zakres. Potrzebuje do tego możliwości porównywania obiektów.
+Sortowany typ musi definiować `operator<` lub musimy dostarczyć
+funktor porównujący.
+
+```cpp
+struct person {
+    std::string name;
+    std::string surname;
+
+    person(const std::string& n, const std::string& s) : name(n), surname(s) {}
+};
+
+struct person_cmp {
+    bool operator()(const person& p1, const person& p2) {
+        return p1.surname == p2.surname ? p1.name < p2.name : p1.surname < p2.surname;
+    }
+};
+
+std::array<person, 5> ppl = {
+    person{"John", "Doe"},
+    person{"Jane", "Bluford"},
+    person{"Joseph", "Doe"},
+    person{"Jac", "Bluford"},
+    person{"Jessica", "Bluford"}
+};
+std::sort(ppl.begin(), ppl.end(), person_cmp{});
+```
+Source: [sort.cpp](algos/sort.cpp)
+
+### Agregacje
+
+Szablon funkcji `std::accumulate` pozwala agregować dany zakres.
+Mając zadaną wartość początkową akumulatora, funkcja iteruje się po
+elementach zakresu, wywołując za każdym razem zadaną funkcję agregującą.
+Funkcja otrzymuje wartość akumulatora i bieżący element jako parametry,
+zwraca nową wartość akumulatora.
+
+```cpp
+int sum_agg(int acc, int val) {
+    return acc + val;
+}
+
+int prod_agg(int acc, int val) {
+    return acc * val;
+}
+
+std::string cat_agg(std::string acc, int val) {
+    return acc + std::to_string(val) + ",";
+}
+
+std::vector<int> nums = {1, 2, 3, 4, 5};
+std::accumulate(nums.begin(), nums.end(), 0, sum_agg);
+std::accumulate(nums.begin(), nums.end(), 1, prod_agg);
+std::accumulate(nums.begin(), nums.end(), std::string{}, cat_agg);
+```
+Source: [accumulate.cpp](algos/accumulate.cpp)
