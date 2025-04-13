@@ -12,12 +12,20 @@ Zakres:
 * Konwersje
 * Klasy zagnieżdżone i lokalne
 * Iteratory
-* `auto`
-* _ranged-for-loop_
+* Słowo kluczowe `auto`
+* Składnia _ranged-for-loop_
+* Szablony: wprowadzenie
+* Typy algebraiczne
+  * std::pair
+  * std::
 * Standard Template Library
-* Funkcje lambda
+  * std::array
+  * std::vector
+  * std::list
+  * std::map
+  * std::unordered_map
 * Algorytmy STL
-* Ranges
+* Funkcje lambda
 
 ## Przeładowywanie operatorów
 
@@ -479,7 +487,7 @@ for (auto it = l.begin(); it != l.end(); ++it) {
 }
 ```
 
-## Ranged-for
+## Składnia ranged-for-loop
 
 C++ dostarcza jeszcze przyjemniejszą składnię iterowania się po kolekcjach.
 Dla tablic oraz klas dostarczających iteratory zwracane przez `begin()` i `end()`
@@ -502,6 +510,87 @@ for (item_type item : collection) {
     // ...
 }
 ```
+
+
+## Szablony
+
+Jak zaimplementować kontener taki jak `std::vector<T>` mogący przechowywać wiele różnych typów danych.
+C++ dostarcza w tym celu możliwość definiowania **szablonów klas**. Służy do tego słowo kluczowe `template`.
+
+```cpp
+template<typename T>
+class vector {
+  std::unique_ptr<T[]> data;
+  /* ... */
+  void push_back(const T& val);
+  /* ... */
+};
+```
+Source: [templates.cpp](templates.cpp)
+
+Mimo że występuje tu słowo `class` to nie jest definicja klasy. `vector` jest szablonem klasy, który trzeba
+zinstancjonować podając konkretny typ jako `T` w czasie kompilacji.
+
+```cpp
+vector<int> v;     // vector<int> to już poprawny typ
+vector<float> fv;
+```
+
+Kompilator w momencie natrafienia na wykorzystanie szablonu z danymi typami generuje w locie klasę (instancjonuje szablon)
+podstawiając za `T` podane parametry. 
+
+Parametrów szablonowych może być wiele:
+
+```cpp
+template<typename T, typename U>
+class pair {
+  T t;
+  U u;
+public:
+  pair(T t, U u) : t(std::move(t)), u(std::move(u)) {}
+  T& first() { return t; }
+  U& second() { return u; }
+};
+```
+
+> Czasami zamiast `typename` posługujemy się słowem kluczowym `class`. Nie ma różnicy.
+
+
+C++ pozwala też na tworzenie **szablonów funkcji**:
+
+```cpp
+template<typename T>
+void swap(T& a, T& b) {
+    T tmp = std::move(a);
+    a = std::move(b);
+    b = std::move(tmp);
+}
+```
+Source: [templates.cpp](templates.cpp)
+
+Podobnie do klas, szablony funkcji do użycia wymagają podania konkretnych parametrów szablonowych.
+Czasami kompilator potrafi je wydedukować:
+
+```cpp
+
+int x = 10, y = 20;
+swap<int>(x, y);      // ok, generujemy funkcję swap<int>
+swap(x, y);           // też ok!
+```
+
+## Para `std::pair`
+
+Biblioteka standardowa dostarcza wielu użytecznych szablonów klas.
+Pierwszym będzie para `std::pair<T1, T2>` która przechowuje 2 obiekty: jeden typu T1 a drugi typu T2.
+
+Często mówi się, że para to tzw. _product type_, bo liczba jej stanów możliwych to liczba stanów typu T1 pomnożona
+przez liczbę stanów T2.
+
+## Krotka `std::tuple`
+
+## `std::optional`
+
+## `std::variant`
 
 ## Standard Template Library
 
@@ -532,4 +621,263 @@ Wszystkie kontenery przechowują obiekty zadanego typu,
 dostarczają operatory, iteratory, funkcje modyfikujące ich stan.
 Omówienie wszystkich byłoby niemożliwe i nużące. Do pracy z kontenerami STL trzeba korzystać z dokumentacji.
 Omówimy kilka najbardziej istotnych przykładów.
+
+### std::array
+
+Obiekty typu `std::array<T,N>` to zwykłe tablice N-elementowe.
+W środku przechowują obiekt typu `T[N]`. Tablica jest zwykłą składową, nie jest alokowana dynamicznie.
+
+```cpp
+std::array<int, 10> a;
+a[0] = 1;
+a.at(1) = 2;
+a.front() = 3;
+a.back() = 4;
+a.fill(3);
+```
+
+Typ dostarcza operator `[]` i metodę `at()` pozwalające
+odczytywać i zapisywać elementy tablicy.
+Metody `front()` i `back()` zwracają referencje na pierwszy i ostatni element.
+
+Metoda `fill()` wypełnia tablicę daną wartością.
+
+Klasa dostarcza iteratory i iteratory wsteczne:
+
+```cpp
+for (auto it = a.begin(); it != a.end(); it++) {
+    // ...
+}
+for (auto it = a.rbegin(); it != a.rend(); it++) {
+    // ...
+}
+```
+Source: [array.cpp](stl/array.cpp)
+
+Klasa nie definiuje jawnie konstruktora.
+Dlatego elementy tablicy typu wbudowanego nie są domyślnie inicjalizowane.
+
+Dla tablic typów klasowych tworzenie tablicy powoduje utworzenie elementów i wywołanie konstruktora.
+
+```cpp
+class A {
+public:
+    A() { std::cout << "A()\n"; }
+};
+
+std::array<A, 3> tab;
+```
+
+Jeżeli klasa nie ma konstruktora domyślnego, to trzeba jawnie podać argumenty konstruktora każdego podobiektu.
+
+```cpp
+class Point
+{
+public:
+    Point(int x, int y) { std::cout << "Point(" << x << ", " << y << ")\n"; }
+};
+
+std::array<Point, 3> tab2{Point{1, 1}, Point{2, 2}, Point{3, 3}};
+```
+
+### std::vector
+
+`std::vector` to tablica dynamicznego rozmiaru.
+
+Posiada [mnóstwo konstruktorów](https://en.cppreference.com/w/cpp/container/vector/vector).
+Domyślnie konstruowany wektor jest pusty (nie zawiera żadnych obiektów).
+Można stworzyć wektor określonego rozmiaru, tworząc w nim od razu pewną liczbę obiektów:
+
+```cpp
+class A {
+public:
+    A() { std::cout << "A()\n"; }
+    ~A() { std::cout << "~A()\n"; }
+};
+
+std::vector<A> v2(3); // {A(), A(), A()}
+```
+
+Jeżeli typ elementu nie ma domyślnego konstruktora to trzeba podać wartość, która zostanie skopiowana:
+
+```cpp
+class Int {
+public:
+    Int(int val);
+};
+
+std::vector<Int> v3(3, Int(1));
+```
+
+> Należy rozróżnić rozmiar bufora (_capacity_) klasy `std::vector` od liczby przechowywanych elementów (_size_).
+
+Można stworzyć wektor, podając iteratory opisujące zakres elementów z innego źródła:
+
+```cpp
+std::array<int, 3> tab = {1, 2, 3};
+std::vector<int> v4(tab.begin(), tab.end());
+```
+Source: [vector_constructors.cpp](stl/vector_constructors.cpp)
+
+Podobnie do tablicy dostęp do elementów zapewniają metody `at()`, `operator[]`, `front()`, `back()`, `data()`.
+Dostarcza identyczny interfejs iteratorowy pozwalający przechodzić po elementach wektora.
+
+Wektor rośnie wraz ze wstawianiem do niego elementów. Kiedy kończy się miejsce
+implementacja wektora:
+1) alokuje większą tablicę
+2) kopiuje do niej elementy ze starej tablicy
+3) dealokuje starą tablicę niszcząc jej elementy
+
+```cpp
+std::vector<Int> v;
+for (int i = 0; i < 5; ++i)
+{
+    std::cout << "  v.push_back(" << i << ")" << std::endl;
+    v.push_back(Int(i));
+}
+```
+Source: [vector_growth.cpp](stl/vector_growth.cpp)
+
+Ten prosty kod woła nietrywialną ilość operacji na obiektach klasy `Int`:
+
+```
+  v.push_back(0)
+Int() val = 0              // konstrukcja wartości tymczasowej Int(0)
+Int(Int&&) val = 0         // konstrukcja elementu wektora (przeniesienie)
+~Int() val = 0             // destrukcja wartości tymczasowej I(0)
+  v.push_back(1)
+Int() val = 1              // konstrukcja wartości tymczasowej Int(1)
+Int(Int&&) val = 1         // konstrukcja elementu wektora (przeniesienie)
+Int(const Int&) val = 0    // kopia pierwszego elementu ze starej tablicy
+~Int() val = 0             // destrukcja pierwszego elementu ze starej tablicy
+~Int() val = 1             // destrukcja wartości tymczasowej Int(1)
+  ...
+```
+
+Metodą `reserve()` można zawczasu zaalokować odpowiednio dużą przestrzeń i uniknąć
+wielokrotnego kopiowania przy iteracyjnym wstawianiu.
+
+Metoda `resize()` ustawiająca rozmiar wektora, potencjalnie tworzy lub niszczy obiekty.
+
+```cpp
+std::vector<Int> v;
+std::cout << "  v.resize(3)" << std::endl;
+v.resize(3, Int(999));
+std::cout << "  v.resize(0)" << std::endl;
+v.resize(0, Int(999));
+```
+
+```
+  v.resize(3)
+Int() val = 999            // konstrukcja wartości tymczasowej Int(999)
+Int(const Int&) val = 999  // konstrukcja elementu wektora
+Int(const Int&) val = 999  // konstrukcja elementu wektora
+Int(const Int&) val = 999  // konstrukcja elementu wektora
+~Int() val = 999           // destrukcja wartości tymczasowej  
+  v.resize(0)
+Int() val = 999            // konstrukcja wartości tymczasowej Int(999)
+~Int() val = 999           // destrukcja elementu wektora
+~Int() val = 999           // destrukcja elementu wektora
+~Int() val = 999           // destrukcja elementu wektora
+~Int() val = 999           // destrukcja wartości tymczasowej  
+```
+
+Wstawianie elementów na koniec wektora wykonują metody `push_back` i `emplace_back`.
+
+```cpp
+std::vector<Int> v;
+v.reserve(10);
+
+Int val(999);
+
+std::cout << "  v.push_back(val)" << std::endl;
+v.push_back(val);
+std::cout << "  v.push_back(std::move(val))" << std::endl;
+v.push_back(std::move(val));
+std::cout << "  v.emplace_back(999)" << std::endl;
+v.emplace_back(999);
+```
+
+`push_back` kopiuje lub przenosi istniejącą wartość do wnętrza wektora.
+`emplace_back` konstruuje element już w wektorze, unikając kopii.
+
+```
+  v.push_back(val)
+Int(const Int&) val = 999
+  v.push_back(std::move(val))
+Int(Int&&) val = 999
+  v.emplace_back(999)
+Int() val = 999
+  v.insert(v.begin(), Int(1))
+```
+[vector_insert.cpp](stl/vector_insert.cpp)
+
+Do wstawiania elementów na dowolnej pozycji wektora służą metody `insert` i `emplace`.
+Przyjmują iterator mówiący gdzie wstawić.
+
+```cpp
+std::vector<int> vec = {1, 2, 3};
+vec.insert(vec.begin() + 1, 999); // {1, 999, 2, 3} 
+```
+
+Te metody _przesuwają_ elementy wektora za pomocą operatora przeniesienia
+tak, aby powstało miejsce na wstawiany element.
+
+Podobnie podczas usuwania. Metoda `erase()` przyjmuje iterator na element usuwany
+(lub cały zakres). Przesuwa elementy z końca wektora w miejsce pozostałe
+po usunięciu.
+
+```cpp
+// v zawiera {1, 2, 3, 4, 5}
+v.erase(v.begin() + 1, v.begin() + 4);
+```
+
+```
+Int& operator=(Int&&) val = 4  // przeniesienie ostatniego elementu na index [1]
+~Int() val = 2  // usunięcie v[2]
+~Int() val = 3  // usunięcie v[3]
+~Int() val = 4  // usunięcie v[4]
+```
+
+[//]: # (/TODO: Kopiowanie, przenoeszenie całego wektora?)
+
+### std::list
+
+Lista przechowuje każdy element w osobnym obiekcie alokowanym na stercie. 
+Dzięki temu nie trzeba kopiować, przenosić elementów przy wstawianiu, nawet w środek.
+
+```cpp
+std::list<Int> l;
+for (int i = 0; i < 4; ++i) {
+    l.emplace_back(i);
+}
+auto it = l.begin();
+++it;
+++it;
+l.emplace(it, 100);
+```
+
+```
+Int() val = 0
+Int() val = 1
+Int() val = 2
+Int() val = 3
+Int() val = 100
+~Int() val = 0
+~Int() val = 1
+~Int() val = 100
+~Int() val = 2
+~Int() val = 3
+```
+
+Nie ma dostępu swobodnego do i'tego elementu listy.
+Trzeba iść od początku lub od końca, węzeł po węźle.
+
+### std::map
+
+`std::map` to słownik, przechowuje pary klucz-wartość,
+posortowane po kluczu. 
+
+### std::unordered_map
+
 

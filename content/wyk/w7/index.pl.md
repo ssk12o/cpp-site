@@ -6,7 +6,6 @@ weight: 70
 
 # Wykład 7 - Metaprogramowanie
 
-ciężka templatoza
 * function/class/variable template
 * template specialization
 * template partial specialization

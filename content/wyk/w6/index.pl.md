@@ -6,5 +6,10 @@ weight: 60
 
 # Wykład 6 - Polimorfizm i Wyjątki
 
-wyjątki, error_code, RTTI, virtual call
+* Dziedziczenie
+* Funkcje wirtualne
+* RTTI
+* Wyjątki
+* `std::error_code`
+
 
