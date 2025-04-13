@@ -1023,8 +1023,86 @@ Trzeba iść od początku lub od końca, węzeł po węźle.
 ### std::map
 
 `std::map` to słownik, przechowuje pary klucz-wartość,
-posortowane po kluczu. 
+posortowane po kluczu. Wewnątrz mapa przechowuje obiekty typu `std::pair<const Key, Value>`.
+Podczas wstawiania trzeba podać parę, podczas iteracji, przeszukiwania również otrzymujemy parę.
+
+```cpp
+std::map<std::string, color> colors = {
+    {"red", color{255, 0, 0}},
+    {"green", color{0, 255, 0}},
+    {"blue", color{0, 0, 255}}
+};
+
+for (auto it = colors.begin(); it != colors.end(); ++it)
+{
+    std::cout << "  colors[" << it->first << "] = " << it->second << std::endl;
+}
+
+colors.insert(std::make_pair("black", color{0, 0, 0}));
+
+for (const auto& [key, value] : colors)
+{
+    std::cout << "  colors[" << key << "] = " << value << std::endl;
+}
+
+auto it = colors.find("black");
+if (it != colors.end()) {
+    std::cout << "Found colors[" << it->first << "] = " << it->second << std::endl;
+}
+```
+
+Wartość pokazywana przez iterator mapy to para klucz wartość. Trzeba się potem posługiwać składnią `it->first` i `it->second`.
+Dlatego bardzo czytelnym okazuje się połączenie _ranged-for-loop_ ze _structured binding_ podczas iteracji.
+
+Podczas iteracji widać, że kontener jest posortowany po kluczach. Dla typu klucza `std::string` otrzymujemy porządek leksykograficzny:
+
+```text
+  colors[blue] = (0, 0, 255)
+  colors[green] = (0, 255, 0)
+  colors[red] = (255, 0, 0)
+insert black
+  colors[black] = (0, 0, 0)
+  colors[blue] = (0, 0, 255)
+  colors[green] = (0, 255, 0)
+  colors[red] = (255, 0, 0)
+```
+
+Przy takim wstawianiu powstaje dużo wartości tymczasowych: `color`, potem `std::pair`, potem dopiero para jest kopiowana
+do wnętrza mapy.
+
+Metoda `find()` pozwala wyszukiwać po kluczu, zwracając iterator na wyszukany element (lub `end()` gdy nie znajdzie).
+
+Mapa przeładowywuje często stosowany `operator[]` pozwalający odczytywać i zapisywać elementy mapy:
+
+```cpp
+colors["blue"] = color{0, 0, 254};
+colors["magenta"] = color{255, 0, 255};
+```
+
+Trzeba mieć świadomość, że `operator[]` nie tylko zwraca referencję na wartość w mapie pod danym kluczem,
+ale też potencjalnie tworzy element w mapie (o ile nie istnieje).
+
+```text
+color(0, 0, 254)                            // konstrukcja wartości tymczasowej (0, 0, 254)
+color &operator=(color &&c) (0, 0, 254)     // kopia wartości tymczasowej do istniejącego elementu mapy
+~color() (0, 0, 254)                        // destrukcja wartości tymczasowej
+color(255, 0, 255)                          // konstrukcja wartości tymczasowej (255, 0, 255) 
+color()                                     // konstrukcja nowego elementu mapy przez operator[]
+color &operator=(color &&c) (255, 0, 255)   // kopia wartości tymczasowej do nowo utworzonego elementu mapy
+~color() (255, 0, 255)                      // destrukcja wartości tymczasowej
+```
+
+Dlatego nie można użyć tego operatora do wyszukiwania (bo a nuż coś wstawimy). Nie da się go też stosować
+mając `const` mapę lub referencję na stałą.
+
+`std::set` jest tym co `std::map`, tylko bez wartości. Przechowuje same klucze.
 
 ### std::unordered_map
+
+
+
+## Algorytmy STL
+
+## Funkcje lambda
 
 
