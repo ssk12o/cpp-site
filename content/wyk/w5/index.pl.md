@@ -16,14 +16,16 @@ Zakres:
 * Składnia _ranged-for-loop_
 * Szablony: wprowadzenie
 * Typy algebraiczne
-  * std::pair
-  * std::
+  * `std::pair`
+  * `std::tuple`
+  * `std::optional`
+  * `std::variant`
 * Standard Template Library
-  * std::array
-  * std::vector
-  * std::list
-  * std::map
-  * std::unordered_map
+  * `std::array`
+  * `std::vector`
+  * `std::list`
+  * `std::map`
+  * `std::unordered_map`
 * Algorytmy STL
 * Funkcje lambda
 
@@ -582,15 +584,160 @@ swap(x, y);           // też ok!
 
 Biblioteka standardowa dostarcza wielu użytecznych szablonów klas.
 Pierwszym będzie para `std::pair<T1, T2>` która przechowuje 2 obiekty: jeden typu T1 a drugi typu T2.
+W momencie konstrukcji pary, powstają 2 podobiekty, domyślnie konstruowane.
 
-Często mówi się, że para to tzw. _product type_, bo liczba jej stanów możliwych to liczba stanów typu T1 pomnożona
+```cpp
+{
+    std::pair<A, B> p;
+}
+```
+Source: [pair.cpp](stl/pair.cpp)
+
+```
+A()
+B()
+~B()
+~A()
+```
+
+Dostęp do elementów jest możliwy za pomocą składowych `first` i `second`.
+
+```cpp
+p.first = A();
+p.second = B();
+```
+
+```
+A()                // konstrukcja wartości tymczasowej A()
+A::operator=(A&&)  // przeniesienie wartości tymczasowej do wnętrza pary
+~A()               // destrukcja wartości tymczasowej A()
+B()                // konstrukcja wartości tymczasowej B()
+B::operator=(B&&)  // przeniesienie wartości tymczasowej do wnętrza pary
+~B()               // destrukcja wartości tymczasowej B()
+```
+
+Parę można stworzyć z istniejących obiektów, kopiując je lub przenosząc:
+
+```cpp
+A a;
+B b;
+std::pair<A, B> p(a, b);
+std::pair<A, B> p2(std::move(a), std::move(b));
+```
+
+```
+A(const A&)
+B(const B&)
+A(A&&)
+B(B&&)
+```
+
+Biblioteka dostarcza pomocniczy szablon funkcji `std::make_pair` tworzącą parę z podanych argumentów.
+
+```cpp
+std::pair<int, float> p = std::make_pair(1, 2.0f);
+```
+
+> Często mówi się, że para to tzw. _typ ilocznyowy_, bo liczba jej stanów możliwych to liczba stanów typu T1 pomnożona
 przez liczbę stanów T2.
 
 ## Krotka `std::tuple`
 
+Podobnym typem jest `std::tuple`, przechowujący kilka podobiektów.
+
+```cpp
+std::tuple<int, float, bool> t = {1, 2.0, true};
+
+int i = std::get<0>(t);
+float f = std::get<1>(t);
+bool b = std::get<2>(t);
+```
+Source: [tuple.cpp](stl/tuple.cpp)
+
+Dostęp do elementów krotki jest możliwy za pomocą pomocniczego 
+szablonu funkcji `std::get<idx>` zwracającego referencję na dany element.
+
+Podobnie, biblioteka dostarcza pomocniczy szablon `std::make_tuple`:
+
+```cpp
+auto t = std::make_tuple(0, 0.0, false);
+```
+
+C++17 dostarcza składnię znaną jako [_structured binding_](https://en.cppreference.com/w/cpp/language/structured_binding)
+pozwalającą czytelniej korzystać z elementów typów iloczynowych:
+
+```cpp
+auto t = std::make_tuple(0, 0.0, false);
+auto [i, f, b] = t;
+auto& [ri, rf, rb] = t;
+ri = 2;
+rf = 4.0;
+rb = false;
+```
+
+Podobna składnia działa dla struktur, tablic i `std::pair`.
+
 ## `std::optional`
 
+Czasami chcielibyśmy w zmiennej przechowywać wartość jakiegoś typu
+lub nic: wartość pustą, null.
+
+Biblioteka dostarcza szablon `std::optional<T>`, który przechowuje albo wartość typu T,
+albo nic, wartość pustą, reprezentowaną jako `std::nullopt`.
+
+```cpp
+std::optional<A> null;
+std::optional<A> null2 = std::nullopt;
+
+A a;
+std::optional<A> opt(a);
+opt = null;
+```
+Source: [optional.cpp](stl/optional.cpp)
+
+```
+A()           // konstrukcja obiektu A a;
+A(const A&)   // konstrukcja opt: kopia a
+~A()          // destrukcja obiektu przechowywanego w opt
+~A()          // destrukcja obiektu A a;
+```
+
+`std::optional` dostarcza metody `has_value`, `value`, `value_or`,
+`operator*`, `reset` pozwalające badać jego stan
+i dobierać się do przechowywanej wartości:
+
+```cpp
+std::optional<A> opt{A()};
+if (opt.has_value()) {
+    *opt = A();
+    opt.value() = A();
+}
+opt.reset();
+```
+
+> `std::optional<T> to tzw. _typ sumacyjny_, bo liczba jego stanów to liczba stanów T + 1 (null)
+
 ## `std::variant`
+
+`std::variant` to typ sumacyjny przechowujący wartość jednego z podanyh typów
+(a nie wszystkich na raz, jak krotka). Zachowuje się podobnie do unii,
+ale pamięta, który typ w danym momencie przechowuje.
+
+```cpp
+std::variant<int, float, bool> v;
+v = 3;
+v = 2.0f;
+v = true;
+
+if (std::holds_alternative<bool>(v)) {
+    std::get<bool>(v) = false;
+}
+```
+Source: [variant.cpp](stl/variant.cpp)
+
+Domyslnie konstruowany variant przechowuje obiekt pierwszego typu.
+Szablon `std::get<T>` pozwala na dostęp do przechowywanego obiektu.
+`std::holds_alternative<T>` i metoda `index` pozwalają sprawdzić typ przechowywanego obiektu.
 
 ## Standard Template Library
 

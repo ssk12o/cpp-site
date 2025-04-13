@@ -6,7 +6,21 @@
 class A {
 public:
     A() { std::cout << "A()\n"; }
+    A(const A&) { std::cout << "A(const A&)\n"; }
+    A(A&&) { std::cout << "A(A&&)\n"; }
     ~A() { std::cout << "~A()\n"; }
+    A& operator=(const A&) { std::cout << "A::operator=(const A&)\n"; return *this; }
+    A& operator=(A&&) { std::cout << "A::operator=(A&&)\n"; return *this; }
+};
+
+class B {
+   public:
+    B() { std::cout << "B()\n"; }
+    B(const B&) { std::cout << "B(const B&)\n"; }
+    B(B&&) { std::cout << "B(B&&)\n"; }
+    ~B() { std::cout << "~B()\n"; }
+    B& operator=(const B&) { std::cout << "B::operator=(const B&)\n"; return *this; }
+    B& operator=(B&&) { std::cout << "B::operator=(B&&)\n"; return *this; }
 };
 
 class Int
