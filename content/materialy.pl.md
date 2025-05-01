@@ -20,3 +20,4 @@ title: "Materiały"
 * **Library order in static linking** Eli Bendersky. (2013, July 9). [https://eli.thegreenplace.net/2013/07/09/library-order-in-static-linking](https://eli.thegreenplace.net/2013/07/09/library-order-in-static-linking)
 * **What is the Strict Aliasing Rule and Why do we care?** Shafik Yaghmour. [https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8](https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8)
 * **Git from the bottom up** John Wiegley. [https://jwiegley.github.io/git-from-the-bottom-up](https://jwiegley.github.io/git-from-the-bottom-up)
+* **What does C++ Object Layout Look Like?** [https://nimrod.blog/posts/what-does-cpp-object-layout-look-like](https://nimrod.blog/posts/what-does-cpp-object-layout-look-like)
