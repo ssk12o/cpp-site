@@ -1101,3 +1101,165 @@ generuje kod algorytmu przeszukiwania grafu dziedziczenia od typu rzeczywistego 
 > Do implementacji innej logiki w zależności od typu obiektu zawsze preferujemy
 > funkcje wirtualne nad mechanizmy RTTI!
 
+## Wyjątki
+
+Wyjątki są mechanizmem raportowania błędów. Język dostarcza specjalną instrukcję `throw` umożliwiającą _rzucenie wyjątku_,
+czyli nagłe wyjście z funkcji, bez zwracania wartości, która powinna być zwrócona.
+Wyjątek podąża następnie w górę stosu wywołań, przerywając wszystkie funkcje po drodze, aż do najgłębiej położonej na stosie
+funkcji `main()`, Program kończy się wtedy z błędem:
+
+```cpp
+#include <vector>
+#include <stdexcept>
+#include <iostream>
+
+int divide(int a, int b) {
+    if (b == 0) {
+        throw std::invalid_argument("Division by zero");
+    }
+    return a / b;
+}
+
+std::vector<int> do_divisions(std::vector<std::pair<int, int>> fractions) {
+    std::vector<int> results;
+    for (auto [n, d] : fractions) {
+        std::cout << "Dividing " << n << " by " << d << "\n";
+        results.push_back(divide(n, d));
+    }
+    return results;
+}
+
+int main() {
+    do_divisions({ {1, 1}, {2, 1}, {3, 2}, {4, 0}, {2, 2} });
+    return 0;
+}
+```
+Source: [basic.cpp](exceptions/basic.cpp)
+
+```text
+Dividing 1 by 1
+Dividing 2 by 1
+Dividing 3 by 2
+Dividing 4 by 0
+terminate called after throwing an instance of 'std::invalid_argument'
+  what():  Division by zero
+```
+
+Wyjątkiem, nazywamy obiekt, który jest operandem wyrażenia `throw`. Rzucać można obiektami dowolnego typu.
+Zaleca się, aby wyjątki były obiektami typu dziedziczącego z bibliotecznego `std::exception` (tak jak podany w przykładzie
+`std::invalid_argument`), ale nie jest to konieczne. Równie dobrze można rzucić tekstem, liczbą całkowitą, czy obiektem
+własnego typu niezwiązanego z hierarchią dziedziczenia wywiedzioną ze `std::exception`.
+
+[Biblioteka standardowa](https://en.cppreference.com/w/cpp/header/stdexcept) dostarcza w nagłówku `<stdexcept>` 
+kilka typów wyjątków, których użycie może być wygodne i czytelne. Wszystkie przechowują wewnątrz tekst z informacją o błędzie.
+
+### Łapanie wyjątków
+
+Jeżeli wołający daną funkcję, rzucającą wyjątki, jest zainteresowany obsłużeniem potencjalnego błędu,
+to może rzucane wyjątki _łapać_, przerywając niekontrolowaną podróż wyjątku w górę stosu i kontynuując działanie programu.
+
+```cpp
+try {
+    do_divisions({ {1, 1}, {2, 1}, {3, 2}, {4, 0}, {2, 2} });
+} catch (const std::exception& e) {
+    std::cout << "Caught exception: " << e.what() << "\n";
+}
+```
+Source: [catch.cpp](exceptions/catch.cpp)
+
+Do łapania służy blok `try { ... } catch { ... }`. Kontrola wchodzi do bloku `try { ... }`. Jeżeli tam zostanie 
+zgłoszony wyjątek, który będzie chciał blok try opuścić w górę, to kontrola przejdzie do bloku `catch { ... }`, przekazując
+obiekt wyjątku jako argument. Po jego wykonaniu program będzie kontynuowany za blokiem `catch`.
+
+Specyfikując parametr jako `std::exception&` będziemy tutaj łapać nie tylko obiekty typu `std::exception` ale i wszystkich
+typów pochodnych!. Możemy też łapać inne rzeczy, np. `catch(int x) { ... }`, `catch(std::string) { ... }`.
+Można też łapać różne typy wyjątków w jednym bloku:
+
+```cpp
+try {
+    // ...
+} catch (const std::logic_error& e) {
+    std::cout << "Caught logic_error: " << e.what() << "\n";
+} catch (const std::exception& e) {
+    std::cout << "Caught base exception: " << e.what() << "\n";
+} catch (int val) {
+    std::cout << "Caught integer: " << val << "\n";
+} catch (...) {
+    std::cout << "Caught something...\n";
+}
+```
+
+Typ wyjątku będzie pasowany po kolei, do wszystkich klauzuli `catch()`. `catch(...)` łapie wyjątki dowolnego typu. 
+Jeżeli nigdzie nie nastąpi dopasowanie, to wyjątek poleci dalej, w górę stosu.
+
+### Odwijanie stosu
+
+Wyjątek może być rzucony w dowolnym miejscu w funkcji. Nagłe wyjście spowoduje zniszczenie wszystkich obiektów
+automatycznych, skonstruowanych do tej pory. Wędrując w górę stosu, wyjątek będzie czynił to samo: przerywał 
+wykonanie co raz to niżej zagłębionych funkcji, niszcząc ich obiekty lokalne automatycznie. Ten proces
+nazywamy _odwijaniem stosu_.
+
+```cpp
+class DynamicInt {
+    int* ptr;
+   public:
+    DynamicInt(int value) : ptr(new int{value}) {
+        std::cout << "Creating DynamicInt = " << value << "\n";
+    }
+    ~DynamicInt() {
+        std::cout << "Destroying DynamicInt = " << *ptr << "\n";
+        delete ptr;
+    }
+};
+
+void do_work(int value) {
+    if (value <= 0) {
+        std::cout << "Zero reached\n";
+        throw std::runtime_error("Zero reached");
+    }
+    DynamicInt val(value);
+    do_work(value - 1);
+}
+
+try {
+    do_work(5);
+} catch (std::exception& e) {
+    std::cout << "do_work() failed with exception = " << e.what() << "\n";
+}
+```
+Source: [unwind.cpp](exceptions/unwind.cpp)
+
+W pewnym momencie rekurencyjna funkcja `do_work` zostaje przerwana wyjątkiem. Ten, podróżując w górę, niszczy lokalne 
+obiekty `DynamicInt val(value)` przechowywane na stosie ramek funkcji `do_work`, co widać na wydruku:
+
+```cpp
+Creating DynamicInt = 5
+Creating DynamicInt = 4
+Creating DynamicInt = 3
+Creating DynamicInt = 2
+Creating DynamicInt = 1
+Zero reached
+Destroying DynamicInt = 1
+Destroying DynamicInt = 2
+Destroying DynamicInt = 3
+Destroying DynamicInt = 4
+Destroying DynamicInt = 5
+do_work() failed with exception = Zero reached
+```
+
+Dzięki temu rzucanie wyjątków jest bezpieczne. Mając na stosie, np. `std::unique_ptr`, mamy gwarancję, że jeżeli 
+gdziekolwiek później w trakcie naszej funkcji, zostanie zgłoszony błąd, to `unique_ptr` zostanie zniszczony
+a razem z nim wskazywany obiekt. Nie musimy przejmować się różną logiką obsługi błędów, w zależności od tego,
+gdzie w funkcji wystąpi błąd.
+
+```cpp
+int do_work() {
+    std::unique_ptr<char[]> bufer1 = std::make_unique<char[]>(100);
+    std::size_t num = step1(buffer1.get());
+    std::unique_ptr<char[]> bufer2 = std::make_unique<char[]>(num);
+    return step2(buffer2.get());
+}
+```
+
+W tym przykładzie, jeżeli `step1` zgłosi wyjątek, to `buffer1` zostanie automatycznie zwolniony, a jeżeli `step2` rzuci
+wyjątek, to obydwa bufory zostaną zwolnione!
