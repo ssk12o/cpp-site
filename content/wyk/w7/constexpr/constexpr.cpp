@@ -1,3 +1,6 @@
+#include <array>
+#include <iostream>
+
 constexpr int add(int x, int y) { return x + y; }
 
 int main(int argc, char** argv)
@@ -11,6 +14,9 @@ int main(int argc, char** argv)
     if (argc > limit) {
         return 1;
     }
+
+    std::array<int, limit> arr = {};
+    std::cout << "created std::array<int, " << arr.size() << ">" << std::endl;
 
     return 0;
 }
