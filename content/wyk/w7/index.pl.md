@@ -61,14 +61,14 @@ Kompilator podstawia `T = int` i otrzymuje w wyniku zwykłą klasę:
 ```cpp
 class point
 {
-    T _x;
-    T _y;
+    int _x;
+    int _y;
 public:
     point() : _x{}, _y{} {}
-    point(T x, T y) : _x(x), _y(y) {}
+    point(int x, int y) : _x(x), _y(y) {}
 
-    T x() const { return _x; }
-    T y() const { return _y; }
+    int x() const { return _x; }
+    int y() const { return _y; }
 };
 ```
 

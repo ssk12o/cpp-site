@@ -60,7 +60,7 @@ struct string_point
     std::string y() const { return  _y; }
 };
 
-template class rectangle<string_point>;
+// template class rectangle<string_point>;
 
 int main()
 {
